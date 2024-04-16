@@ -326,9 +326,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             first_item_len - first_item_type + odd,
             pow2_array,
         );
-        %{
-            print(f"nibbles already checked: {ids.n_nibbles_already_checked}")
-        %}
+        %{ print(f"nibbles already checked: {ids.n_nibbles_already_checked}") %}
 
         if (first_item_type != 0) {
             // If the first item is not a single byte, verify subset in key.

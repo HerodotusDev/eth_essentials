@@ -8,7 +8,7 @@ import os
 GOERLI = "goerli"
 MAINNET = "mainnet"
 
-NETWORK = GOERLI
+NETWORK = MAINNET
 load_dotenv()
 RPC_URL = (
     os.getenv("RPC_URL_GOERLI") if NETWORK == GOERLI else os.getenv("RPC_URL_MAINNET")

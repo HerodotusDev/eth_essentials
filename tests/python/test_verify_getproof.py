@@ -38,7 +38,18 @@ import pickle
 
 offline = False
 
-RPC_URL = "https://eth-mainnet.g.alchemy.com/v2/3QG7M_ZxG-uvZrfVE6y824aEvT67QdTr"
+from dotenv import load_dotenv
+import os
+
+
+GOERLI = "goerli"
+MAINNET = "mainnet"
+
+NETWORK = MAINNET
+load_dotenv()
+RPC_URL = (
+    os.getenv("RPC_URL_GOERLI") if NETWORK == GOERLI else os.getenv("RPC_URL_MAINNET")
+)
 
 zero = 0x0000000000000000000000000000000000000000000000000000000000000000
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
