@@ -3,8 +3,8 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from src.libs.utils import pow2alloc127
-from src.libs.rlp_little import extract_n_bytes_at_pos, extract_n_bytes_from_le_64_chunks_array
+from lib.utils import pow2alloc127
+from lib.rlp_little import extract_n_bytes_at_pos, extract_n_bytes_from_le_64_chunks_array
 
 func main{output_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;

@@ -3,8 +3,8 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
-from src.libs.utils import pow2alloc127, word_reverse_endian_64
-from src.libs.block_header import extract_block_number_big
+from lib.utils import pow2alloc127, word_reverse_endian_64
+from lib.block_header import extract_block_number_big
 
 func main{output_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
     alloc_locals;

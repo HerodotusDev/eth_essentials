@@ -2,8 +2,8 @@
 
 from starkware.cairo.common.alloc import alloc
 
-from src.libs.mmr import compute_height_pre_alloc_pow2
-from src.libs.utils import pow2alloc127
+from lib.mmr import compute_height_pre_alloc_pow2
+from lib.utils import pow2alloc127
 
 // Tests compute_height_pre_alloc_pow2(pos) for pos in [min_pos, max_pos].
 func main{range_check_ptr}() {

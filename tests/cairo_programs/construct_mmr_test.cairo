@@ -1,5 +1,4 @@
-// %builtins output range_check bitwise keccak poseidon
-// Builtins are commented because of redefinition when importing functions from src.single_chunk_processor.chunk_processor
+%builtins output range_check bitwise keccak poseidon
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, PoseidonBuiltin, KeccakBuiltin
 from starkware.cairo.common.uint256 import Uint256, uint256_reverse_endian
@@ -7,20 +6,18 @@ from starkware.cairo.common.uint256 import Uint256, uint256_reverse_endian
 from starkware.cairo.common.builtin_keccak.keccak import keccak
 from starkware.cairo.common.keccak_utils.keccak_utils import keccak_add_uint256
 
-from src.libs.mmr import (
+from lib.mmr import (
     compute_height_pre_alloc_pow2,
     compute_first_peak_pos,
     compute_peaks_positions,
     bag_peaks,
     get_roots,
 )
-from src.libs.utils import pow2alloc127
+from lib.utils import pow2alloc127
 from starkware.cairo.common.default_dict import default_dict_new, default_dict_finalize
 from starkware.cairo.common.dict_access import DictAccess
 from starkware.cairo.common.dict import dict_write
 from starkware.cairo.common.builtin_poseidon.poseidon import poseidon_hash
-
-from src.single_chunk_processor.chunk_processor import construct_mmr, initialize_peaks_dicts
 
 // Simulates MMR construction based on a previous MMR.
 // See hint for more details.
@@ -150,44 +147,6 @@ func main{
     assert 0 = root_poseidon - mmr_last_root_poseidon;
     assert 0 = root_keccak.low - mmr_last_root_keccak.low;
     assert 0 = root_keccak.high - mmr_last_root_keccak.high;
-
-    //
-    let (local previous_peaks_dict_poseidon) = default_dict_new(default_value=0);
-    let (local previous_peaks_dict_keccak) = default_dict_new(default_value=0);
-    tempvar dict_start_poseidon = previous_peaks_dict_poseidon;
-    tempvar dict_start_keccak = previous_peaks_dict_keccak;
-    initialize_peaks_dicts{
-        dict_end_poseidon=previous_peaks_dict_poseidon, dict_end_keccak=previous_peaks_dict_keccak
-    }(
-        previous_peaks_positions_len - 1,
-        previous_peaks_positions,
-        previous_peaks_values_poseidon,
-        previous_peaks_values_keccak,
-    );
-
-    // Intialize MMR arrays. Those will be filled by the construct_mmr function.
-    let (mmr_array_poseidon: felt*) = alloc();
-    let (mmr_array_keccak: Uint256*) = alloc();
-    // Length is common to both arrays.
-    let mmr_array_len = 0;
-
-    with poseidon_hash_array, keccak_hash_array, mmr_array_poseidon, mmr_array_keccak, mmr_array_len, pow2_array, mmr_offset, previous_peaks_dict_poseidon, previous_peaks_dict_keccak {
-        construct_mmr(index=n_values_to_append - 1);
-    }
-    with mmr_array_poseidon, mmr_array_keccak, mmr_array_len, pow2_array, previous_peaks_dict_poseidon, previous_peaks_dict_keccak, mmr_offset {
-        let (new_mmr_root_poseidon: felt, new_mmr_root_keccak: Uint256) = get_roots();
-    }
-
-    // Assert the new MMR root and length are as expected.
-    assert mmr_array_len + mmr_offset - expected_new_len = 0;
-
-    assert new_mmr_root_poseidon - expected_new_root_poseidon = 0;
-    assert new_mmr_root_keccak.low - expected_new_root_keccak.low = 0;
-    assert new_mmr_root_keccak.high - expected_new_root_keccak.high = 0;
-
-    // Finalize dicts for soundness.
-    default_dict_finalize(dict_start_poseidon, previous_peaks_dict_poseidon, 0);
-    default_dict_finalize(dict_start_keccak, previous_peaks_dict_keccak, 0);
 
     return ();
 }

@@ -2,8 +2,8 @@
 
 from starkware.cairo.common.alloc import alloc
 
-from src.libs.mmr import is_valid_mmr_size_inner
-from src.libs.utils import pow2alloc127
+from lib.mmr import is_valid_mmr_size_inner
+from lib.utils import pow2alloc127
 
 func main{range_check_ptr}() {
     alloc_locals;

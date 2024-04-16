@@ -5,8 +5,8 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, PoseidonBuilti
 from starkware.cairo.common.uint256 import Uint256
 
 from starkware.cairo.common.builtin_keccak.keccak import keccak
-from src.libs.mmr import compute_peaks_positions, bag_peaks
-from src.libs.utils import pow2alloc127
+from lib.mmr import compute_peaks_positions, bag_peaks
+from lib.utils import pow2alloc127
 
 // Test compute_peaks_positions and bag_peaks on a few MMR sizes.
 // Some of the MMR sizes are randomly generated.

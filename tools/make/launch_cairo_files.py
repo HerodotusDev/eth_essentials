@@ -8,8 +8,7 @@ from tools.py.utils import create_directory, get_files_from_folders
 # Constants
 CAIRO_PROGRAMS_FOLDERS = [
     "tests/cairo_programs/",
-    "src/single_chunk_processor",
-    "src/batch_storage_proof",
+    "lib/",
 ]
 BUILD_DIR = "build"
 PROFILING_DIR = os.path.join(BUILD_DIR, "profiling")

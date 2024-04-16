@@ -1,6 +1,6 @@
 %builtins range_check
 
-from src.libs.utils import pow2alloc127
+from lib.utils import pow2alloc127
 
 // A small test to play with define word arrays and their indexes using the pow2alloc127 function.
 // The goal is to demonstrate that the prover can access any memory location if the index of a define word array that comes from a hint is not checked.

@@ -1,6 +1,6 @@
 %builtins range_check
 from starkware.cairo.common.alloc import alloc
-from src.libs.utils import pow2alloc127, get_felt_bitlength
+from lib.utils import pow2alloc127, get_felt_bitlength
 
 func main{range_check_ptr}() {
     alloc_locals;

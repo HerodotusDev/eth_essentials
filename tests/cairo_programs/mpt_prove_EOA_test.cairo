@@ -6,8 +6,8 @@ from starkware.cairo.common.uint256 import Uint256, uint256_reverse_endian
 from starkware.cairo.common.builtin_keccak.keccak import keccak
 from starkware.cairo.common.registers import get_fp_and_pc
 
-from src.libs.utils import pow2alloc127
-from src.libs.mpt import verify_mpt_proof
+from lib.utils import pow2alloc127
+from lib.mpt import verify_mpt_proof
 
 // BLANK HASH BIG = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 // BLANK HASH LITTLE = 5094972239999916
