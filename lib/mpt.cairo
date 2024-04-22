@@ -354,8 +354,13 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                     assert key_bits = key_bit_low;
                 }
             }
-            let (n_nibbles_in_key, remainder) = felt_divmod(key_bits, 4);
-            assert remainder = 0;
+            local n_nibbles_in_key: felt;  // <=> ceil(key_bits/4)
+            let (n_nibbles_in_key_tmp, remainder) = felt_divmod(key_bits, 4);
+            if (remainder != 0) {
+                assert n_nibbles_in_key = n_nibbles_in_key_tmp + 1;
+            } else {
+                assert n_nibbles_in_key = n_nibbles_in_key_tmp;
+            }
             assert n_nibbles_in_key = n_nibbles_already_checked;
             tempvar range_check_ptr = range_check_ptr;
             tempvar bitwise_ptr = bitwise_ptr;
