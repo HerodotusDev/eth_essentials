@@ -11,7 +11,7 @@ from lib.rlp_little import (
     assert_subset_in_key,
     extract_nibble_from_key,
 )
-from lib.utils import felt_divmod, felt_divmod_8, word_reverse_endian_64, get_felt_bitlength
+from lib.utils import felt_divmod, felt_divmod_8, word_reverse_endian_64, get_felt_bitlength_128
 
 // Verify a Merkle Patricia Tree proof.
 // params:
@@ -37,7 +37,7 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
     pow2_array: felt*,
 ) -> (value: felt*, value_len: felt) {
     alloc_locals;
-    %{ print(f"\n\nNode index {ids.node_index+1}/{ids.mpt_proof_len}") %}
+    %{ print(f"\n\nNode index {ids.node_index+1}/{ids.mpt_proof_len} \n \t {ids.n_nibbles_already_checked=}") %}
     if (node_index == mpt_proof_len - 1) {
         // Last node : item of interest is the value.
         // Check that the hash of the last node is the expected one.
@@ -60,20 +60,24 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
         local key_bits;
         with pow2_array {
             if (key_little.high != 0) {
-                let key_bit_high = get_felt_bitlength(key_little.high);
+                let key_bit_high = get_felt_bitlength_128(key_little.high);
                 assert key_bits = 128 + key_bit_high;
             } else {
-                let key_bit_low = get_felt_bitlength(key_little.low);
+                let key_bit_low = get_felt_bitlength_128(key_little.low);
                 assert key_bits = key_bit_low;
             }
         }
         local n_bytes_in_key;
         let (n_bytes_in_key_tmp, rem) = felt_divmod_8(key_bits);
+
         if (n_bytes_in_key_tmp == 0) {
             assert n_bytes_in_key = 1;
         } else {
-            assert n_bytes_in_key = n_bytes_in_key_tmp;
-            assert rem = 0;
+            if (rem != 0) {
+                assert n_bytes_in_key = n_bytes_in_key_tmp + 1;
+            } else {
+                assert n_bytes_in_key = n_bytes_in_key_tmp;
+            }
         }
 
         local n_bytes_checked;
@@ -83,7 +87,6 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
         } else {
             assert n_bytes_checked = n_bytes_checked_tmp;
         }
-
         assert n_bytes_in_key = n_bytes_checked;
         return (item_of_interest, item_of_interest_len);
     } else {
@@ -362,7 +365,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         local pow2_array_f: felt*;
         if (first_item_type != 0) {
             // If the first item is not a single byte, verify subset in key.
-            assert_subset_in_key(
+            let (n_nibbles_asserted) = assert_subset_in_key(
                 key_subset=extracted_key_subset,
                 key_subset_len=extracted_key_subset_len,
                 key_subset_nibble_len=n_nibbles_in_first_item,
@@ -373,7 +376,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             );
             assert range_check_ptr_f = range_check_ptr;
             assert bitwise_ptr_f = bitwise_ptr;
-            assert n_nibbles_already_checked_f = n_nibbles_already_checked;
+            assert n_nibbles_already_checked_f = n_nibbles_already_checked + n_nibbles_asserted;
             assert pow2_array_f = pow2_array;
         } else {
             // if the first item is a single byte
