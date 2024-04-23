@@ -15,17 +15,17 @@ As these functions are written in cairo0, we rely on git submodules for using th
 
 E.g. like this:
 ```gitmodules
-[submodule "packages/evm_libs_cairo"]
-  path = packages/evm_libs_cairo
-  url = https://github.com/HerodotusDev/evm_libs_cairo.git
+[submodule "packages/eth_essentials"]
+  path = packages/eth_essentials
+  url = https://github.com/HerodotusDev/eth_essentials.git
 ```
 
-When compiling your program, it is important to set the `CAIRO_PATH` environment variable to the path of the `evm_libs_cairo` directory. This is necessary for the compiler to find the imported functions. For the example above, this would look like this: `cairo-compile --cairo_path="packages/evm_libs_cairo" ...`
+When compiling your program, it is important to set the `CAIRO_PATH` environment variable to the path of the `eth_essentials` directory. This is necessary for the compiler to find the imported functions. For the example above, this would look like this: `cairo-compile --cairo_path="packages/eth_essentials" ...`
 
 Now the functions can be imported like this:
 
 ```python
-from packages.evm_libs_cairo.lib.utils import pow2alloc128
+from packages.eth-essentials.lib.utils import pow2alloc128
 ```
 
 ### Testing
