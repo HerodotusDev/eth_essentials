@@ -19,6 +19,9 @@ serde = "1.0.197"
 serde_with = { version = "3.7.0", features = ["hex"] }
 serde_json = "1.0.114"
 rand = "0.8.4"
+tiny-keccak = "2.0.2"
+eth_trie = "0.4.0"
+ethereum-types = "0.14.1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full", "test-util"] }
