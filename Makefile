@@ -34,3 +34,6 @@ test-full:
 format-cairo:
 	@echo "Format all .cairo files"
 	./tools/make/format_cairo_files.sh
+
+fuzz-mpt:
+	./tools/make/fuzzer.sh tests/fuzzing/mpt.cairo

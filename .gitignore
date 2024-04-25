@@ -28,3 +28,6 @@ package-lock.json
 src/.DS_Store
 
 solidity-verifier/lib/*
+*.log
+
+!tests/fuzzing/fixtures/*.json

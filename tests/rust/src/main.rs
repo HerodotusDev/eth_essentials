@@ -41,6 +41,7 @@ enum ProofType {
 #[serde_with::serde_as]
 #[derive(Debug, Serialize)]
 pub struct MptProof {
+    #[serde_as(as = "serde_with::hex::Hex")]
     root: B256,
     #[serde_as(as = "Vec<serde_with::hex::Hex>")]
     proof: Vec<Vec<u8>>,
@@ -66,6 +67,10 @@ impl Fetcher {
         for i in 0..tx_count {
             let trie_proof = self.tx.get_proof(i)?;
             let root = self.tx.get_root().unwrap();
+            
+            // ensure the proof is valid
+            self.tx.verify_proof(i, trie_proof.clone())?;
+            
             proofs.push(MptProof {
                 proof: trie_proof,
                 key: generate_key_le(i),
@@ -84,6 +89,10 @@ impl Fetcher {
         for i in 0..tx_count {
             let trie_proof = self.receipt.get_proof(i)?;
             let root = self.receipt.get_root()?;
+
+            // ensure the proof is valid
+            self.receipt.verify_proof(i, trie_proof.clone())?;
+            
             proofs.push(MptProof {
                 proof: trie_proof,
                 key: generate_key_le(i),
@@ -138,7 +147,7 @@ async fn main() -> Result<(), Error> {
     let mut fetcher = Fetcher::new("https://ethereum-rpc.publicnode.com")?;
 
     // Generate random block proofs
-    let proofs = fetcher.generate_random_block_proofs(50).await?;
+    let proofs = fetcher.generate_random_block_proofs(25).await?;
 
     // Export the proofs to a JSON file
     export_batch(proofs).unwrap();
@@ -147,20 +156,21 @@ async fn main() -> Result<(), Error> {
 }
 
 fn export_batch(proofs: Vec<MptProof>) -> Result<(), Error> {
-    let serialized = serde_json::to_string_pretty(&proofs).unwrap();
+    let chunks = proofs.chunks(50);
 
-    // Write the JSON string to a file
-    let mut file = File::create("output.json").unwrap();
-    file.write_all(serialized.as_bytes()).unwrap();
+    for (i, chunk) in chunks.enumerate() {
+        let serialized = serde_json::to_string_pretty(chunk).unwrap();
+
+        // Write the JSON string to a file
+        let mut file = File::create(format!("mpt_proofs_{}.json", i)).unwrap();
+        file.write_all(serialized.as_bytes()).unwrap();
+    }
 
     Ok(())
 }
 
 fn generate_key_le(index: u64) -> Vec<u8> {
-    let mut key = alloy_rlp::encode(U256::from(index));
-    // already reverses the bytes order
-    key.reverse();
-    key
+    alloy_rlp::encode(U256::from(index))
 }
 
 impl From<TrieError> for Error {
