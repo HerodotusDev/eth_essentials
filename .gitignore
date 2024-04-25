@@ -19,7 +19,8 @@ out/
 .env
 .encryptedKey
 broadcast/
-
+*.idea
+tests/rust/target
 node_modules
 package-lock.json
 
