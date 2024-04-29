@@ -13,7 +13,8 @@ use eth_trie_proofs::tx_receipt_trie::TxReceiptsMptHandler;
 use eth_trie_proofs::tx_trie::TxsMptHandler;
 use eth_trie_proofs::Error as TrieError;
 use ethereum_types::H256;
-use rand::Rng;
+use rand::{Rng, RngCore};
+use rlp::encode;
 use reqwest::Client;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -55,6 +56,9 @@ pub struct MptProof {
     proof: Vec<Vec<u8>>,
     #[serde_as(as = "serde_with::hex::Hex")]
     key: Vec<u8>,
+    #[serde_as(as = "serde_with::hex::Hex")]
+    value_hash: Vec<u8>,
+    value_len: u16,
     kind: ProofType,
 }
 
@@ -84,13 +88,16 @@ impl Fetcher {
             let root = self.tx.get_root().unwrap();
 
             // ensure the proof is valid
-            self.tx.verify_proof(i, trie_proof.clone())?;
+            let result = self.tx.verify_proof(i, trie_proof.clone())?;
+            let (value_hash, value_len) = gen_payload_commitment(result);
 
             proofs.push(MptProof {
                 proof: trie_proof,
                 key: generate_key_from_index(i),
                 root,
                 kind: ProofType::TxProof,
+                value_hash,
+                value_len,
             });
         }
 
@@ -111,13 +118,16 @@ impl Fetcher {
             let root = self.receipt.get_root()?;
 
             // ensure the proof is valid
-            self.receipt.verify_proof(i, trie_proof.clone())?;
+            let result = self.receipt.verify_proof(i, trie_proof.clone())?;
+            let (value_hash, value_len) = gen_payload_commitment(result);
 
             proofs.push(MptProof {
                 proof: trie_proof,
                 key: generate_key_from_index(i),
                 root,
                 kind: ProofType::ReceiptProof,
+                value_hash,
+                value_len,
             });
         }
 
@@ -154,18 +164,26 @@ impl Fetcher {
                 .collect();
 
             // ensure the proof is valid
-            trie.verify_proof(
+            let result = trie.verify_proof(
                 H256::from_slice(block.header.state_root.as_slice()),
                 generate_key_from_address(address.0.as_slice()).as_slice(),
                 proof.clone(),
             )?;
 
-            proofs.push(MptProof {
-                proof,
-                key: generate_key_from_address(address.0.as_slice()),
-                root: block.header.state_root,
-                kind: ProofType::AccountProof,
-            });
+            match result {
+                Some(value) => {
+                    let (value_hash, value_len) = gen_payload_commitment(value.to_vec());
+                    proofs.push(MptProof {
+                        proof,
+                        key: generate_key_from_address(address.0.as_slice()),
+                        root: block.header.state_root,
+                        kind: ProofType::AccountProof,
+                        value_hash,
+                        value_len,
+                    });
+                }
+                _ => panic!("Proof verification failed for address: {:?}", address),
+            }
         }
 
         Ok(proofs)
@@ -227,16 +245,85 @@ impl Fetcher {
     }
 }
 
+fn gen_payload_commitment(value: Vec<u8>) -> (Vec<u8>, u16) {
+    let mut hasher = Keccak::v256();
+    hasher.update(value.as_ref());
+    let mut output = [0u8; 32];
+    hasher.finalize(&mut output);
+    (output.to_vec(), value.len() as u16)
+}
+
+fn generate_byte_key_tests() -> Vec<MptProof> {
+    let (mut trie, keys) = seed_test_trie();
+    let mut proofs = vec![];
+    let root = trie.root_hash().unwrap();
+    for (i, key) in keys.iter().enumerate() {
+        let proof = trie.get_proof(key.as_slice()).unwrap();
+        let res = trie.verify_proof(root.clone(), key.as_slice(), proof.clone());
+        match res {
+            Ok(Some(value)) => {
+                let (value_hash, value_len) = gen_payload_commitment(value.to_vec());
+                proofs.push(MptProof {
+                    proof,
+                    key: key.clone(),
+                    root: B256::from_slice(root.as_bytes()),
+                    kind: ProofType::TxProof,
+                    value_hash,
+                    value_len,
+                });
+            },
+            _ => panic!("Proof verification failed for key: {:?}", i),
+        }
+    }
+
+    proofs
+}
+
+fn seed_test_trie() -> (EthTrie<MemoryDB>, Vec<Vec<u8>>) {
+    let memdb = Arc::new(MemoryDB::new(true));
+    let mut trie = EthTrie::new(memdb.clone());
+    let mut keys = vec![];
+    let mut key_bytes_len = 1;
+    while key_bytes_len <= 32 {
+        let mut key = vec![0u8; key_bytes_len];
+        let mut value = vec![0u8; 32];
+        let mut i = 0;
+
+        // increase the permutations with a growing key size
+        let permutations: u64 = 100 + key_bytes_len.pow(4) as u64;
+
+        while i < permutations {
+            rand::thread_rng().fill_bytes(&mut key);
+            rand::thread_rng().fill_bytes(&mut value);
+            let rlp_value = encode(&value);
+            trie.insert(key.clone().as_slice(), rlp_value.as_ref()).unwrap();
+            i += 1;
+        }
+
+        // The value we use for the test is rlp encoded
+        rand::thread_rng().fill_bytes(&mut key);
+        rand::thread_rng().fill_bytes(&mut value);
+        let rlp_value = encode(&value);
+
+        trie.insert(key.clone().as_slice(), rlp_value.as_ref()).unwrap();
+
+        keys.push(key);
+        key_bytes_len += 1;
+    }
+
+    return (trie, keys);
+}
+
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     // Create a new Fetcher instance
-    let mut fetcher =
-        Fetcher::new("")?;
+    let mut fetcher = Fetcher::new("")?;
 
     // Generate random block proofs
-    let proofs = fetcher.generate_random_block_proofs(5).await?;
-    // let proofs = fetcher.get_account_proofs(19733390).await?;
+    // let proofs = fetcher.generate_random_block_proofs(5).await?;
 
+    let proofs = generate_byte_key_tests();
     export_batch(proofs).unwrap();
 
     Ok(())
