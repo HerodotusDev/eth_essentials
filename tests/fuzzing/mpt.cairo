@@ -47,13 +47,6 @@ func verify_n_mpt_proofs{
     %{
         from tools.py.utils import bytes_to_8_bytes_chunks_little, split_128, reverse_endian_256
 
-        def reverse_key(key):
-            key_bytes = bytes.fromhex(key)
-            # reverse byte order while variable length
-            bytewise_reverse = int.from_bytes(key_bytes, byteorder="little")
-            # pad to 32 bytes
-            return split_128(int.from_bytes(bytewise_reverse.to_bytes(32, "big"), "big"))
-
         def encode_proof(proof):
             chunks = []
             bytes_len = []
@@ -69,8 +62,6 @@ func verify_n_mpt_proofs{
         batch = program_input[ids.index]
         (chunks, bytes_len) = encode_proof(batch["proof"])
 
-
-
         segments.write_arg(ids.proof, chunks)
         segments.write_arg(ids.proof_bytes_len, bytes_len)
         ids.proof_len = len(chunks)
@@ -83,7 +74,7 @@ func verify_n_mpt_proofs{
         ids.root.high = root_high
 
         #handle key
-        (key_low, key_high) = reverse_key(batch["key"])
+        (key_low, key_high) = split_128(int(batch["key"], 16))
         ids.key.low = key_low
         ids.key.high = key_high
     %}
