@@ -31,3 +31,4 @@ solidity-verifier/lib/*
 *.log
 
 !tests/fuzzing/fixtures/*.json
+!tests/cairo_programs/fixtures/*.json
