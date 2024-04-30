@@ -1,0 +1,59 @@
+%builtins output range_check bitwise
+
+from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+
+from lib.utils import pow2alloc128, uint256_reverse_endian_no_padding, Uint256
+
+func main{output_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() {
+    alloc_locals;
+    let (pow2_array: felt*) = pow2alloc128();
+    test_reverse(n_bits_index=1, pow2_array=pow2_array);
+    %{ print("End tests!") %}
+    return ();
+}
+
+func test_reverse_inner{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    n_bits_in_input: felt, pow2_array: felt*
+) {
+    alloc_locals;
+    local x: Uint256;
+    %{
+        import random 
+        random.seed(0)
+        from tools.py.utils import split_128
+        # Used for the sanity check
+        def parse_int_to_bytes(x:int)-> bytes:
+            hex_str = hex(x)[2:]
+            if len(hex_str)%2==1:
+                hex_str = '0'+hex_str
+            return bytes.fromhex(hex_str)
+
+
+        x = random.randint(2**(ids.n_bits_in_input - 1), 2**ids.n_bits_in_input - 1)
+        input_bytes = parse_int_to_bytes(x)
+
+        print(f"N bits in input: {ids.n_bits_in_input}")
+        print(f"input: {input_bytes}")
+        ids.x.low, ids.x.high = split_128(x)
+        print(f"input: {hex(ids.x.low + 2**128 * ids.x.high)}")
+    %}
+    let (res) = uint256_reverse_endian_no_padding(x, pow2_array);
+    %{
+        res_bytes = parse_int_to_bytes(ids.res.low + 2**128 * ids.res.high)
+        print(f"output: {res_bytes}")
+        assert input_bytes[::-1] == res_bytes, f"{input_bytes[::-1]} != {res_bytes}"
+    %}
+    return ();
+}
+
+func test_reverse{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    n_bits_index: felt, pow2_array: felt*
+) {
+    alloc_locals;
+    if (n_bits_index == 257) {
+        return ();
+    }
+    test_reverse_inner(n_bits_in_input=n_bits_index, pow2_array=pow2_array);
+    return test_reverse(n_bits_index=n_bits_index + 1, pow2_array=pow2_array);
+}

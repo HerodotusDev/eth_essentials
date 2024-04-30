@@ -15,6 +15,91 @@ from starkware.cairo.common.registers import get_fp_and_pc
 const DIV_32 = 2 ** 32;
 const DIV_32_MINUS_1 = DIV_32 - 1;
 
+// Returns the number of bytes in a number with n_bits bits.
+// Assumptions:
+// - 0 <= n_bits < 8 * RC_BOUND
+func n_bits_to_n_bytes{range_check_ptr: felt}(n_bits: felt) -> felt {
+    if (n_bits == 0) {
+        return 0;
+    }
+    let (q, r) = felt_divmod_8(n_bits);
+    if (q == 0) {
+        return 1;
+    }
+    if (r == 0) {
+        return q;
+    }
+    return q + 1;
+}
+
+// Returns the number of bytes in a 128 bits number.
+// Assumptions:
+// - 0 <= x < 2^128
+func get_felt_n_bytes_128{range_check_ptr: felt}(x: felt, pow2_array: felt*) -> (n_bytes: felt) {
+    let n_bits = get_felt_bitlength_128{pow2_array=pow2_array}(x);
+    let n_bytes = n_bits_to_n_bytes(n_bits);
+    return (n_bytes,);
+}
+// Returns the total number of bits in the uint256 number.
+// Assumptions :
+// - 0 <= x < 2^256
+// Returns:
+// - nbits: felt - Total number of bits in the uint256 number.
+func get_uint256_bit_length{range_check_ptr}(x: Uint256, pow2_array: felt*) -> (nbits: felt) {
+    alloc_locals;
+    with pow2_array {
+        if (x.high != 0) {
+            let x_bit_high = get_felt_bitlength_128(x.high);
+            return (nbits=128 + x_bit_high);
+        } else {
+            if (x.low != 0) {
+                let x_bit_low = get_felt_bitlength_128(x.low);
+                return (nbits=x_bit_low);
+            } else {
+                return (nbits=0);
+            }
+        }
+    }
+}
+
+// Takes a uint128 number, reverse its byte endianness without adding right-padding
+// Ex :
+// Input = 0x123456
+// Output = 0x563412
+// Input = 0x123
+// Output = 0x0312
+func uint128_reverse_endian_no_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    x: felt, pow2_array: felt*
+) -> (res: felt, n_bytes: felt) {
+    alloc_locals;
+    let (num_bytes_input) = get_felt_n_bytes_128(x, pow2_array);
+    let (x_reversed) = word_reverse_endian(x);
+    let (num_bytes_reversed) = get_felt_n_bytes_128(x_reversed, pow2_array);
+    if (num_bytes_input != num_bytes_reversed) {
+        let (x_reversed, _) = bitwise_divmod(
+            x_reversed, pow2_array[8 * (num_bytes_reversed - num_bytes_input)]
+        );
+        return (res=x_reversed, n_bytes=num_bytes_input);
+    }
+    return (res=x_reversed, n_bytes=num_bytes_input);
+}
+
+// Takes a uint256 number, reverse its byte endianness without adding right-padding
+func uint256_reverse_endian_no_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    x: Uint256, pow2_array: felt*
+) -> (res: Uint256) {
+    alloc_locals;
+    if (x.high != 0) {
+        let (high_reversed, n_bytes_high) = uint128_reverse_endian_no_padding(x.high, pow2_array);
+        let (low_reversed) = word_reverse_endian(x.low);
+        let (q, r) = bitwise_divmod(low_reversed, pow2_array[8 * (16 - n_bytes_high)]);
+        return (res=Uint256(low=high_reversed + pow2_array[8 * n_bytes_high] * r, high=q));
+    } else {
+        let (low_reversed, _) = uint128_reverse_endian_no_padding(x.low, pow2_array);
+        return (res=Uint256(low=low_reversed, high=0));
+    }
+}
+
 // Adds two integers. Returns the result as a 256-bit integer and the (1-bit) carry.
 // Strictly equivalent and faster version of common.uint256.uint256_add using the same whitelisted hint.
 func uint256_add{range_check_ptr}(a: Uint256, b: Uint256) -> (res: Uint256, carry: felt) {
@@ -191,12 +276,17 @@ func get_felt_bitlength_128{range_check_ptr, pow2_array: felt*}(x: felt) -> felt
 //   q: the quotient.
 //   r: the remainder.
 func bitwise_divmod{bitwise_ptr: BitwiseBuiltin*}(x: felt, y: felt) -> (q: felt, r: felt) {
-    assert bitwise_ptr.x = x;
-    assert bitwise_ptr.y = y - 1;
-    let x_and_y = bitwise_ptr.x_and_y;
+    if (y == 1) {
+        let bitwise_ptr = bitwise_ptr;
+        return (q=x, r=0);
+    } else {
+        assert bitwise_ptr.x = x;
+        assert bitwise_ptr.y = y - 1;
+        let x_and_y = bitwise_ptr.x_and_y;
 
-    let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-    return (q=(x - x_and_y) / y, r=x_and_y);
+        let bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+        return (q=(x - x_and_y) / y, r=x_and_y);
+    }
 }
 
 // Computes x//(2**32) and x%(2**32) using range checks operations.
