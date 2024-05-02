@@ -42,10 +42,11 @@ func verify_n_mpt_proofs{
     let (proof_bytes_len) = alloc();
     local proof_len: felt;
     local key: Uint256;
+    local key_leading_zeroes: felt;
     local root: Uint256;
 
     %{
-        from tools.py.utils import bytes_to_8_bytes_chunks_little, split_128, reverse_endian_256
+        from tools.py.utils import bytes_to_8_bytes_chunks_little, split_128, reverse_endian_256, count_leading_zero_nibbles_from_hex
 
         def encode_proof(proof):
             chunks = []
@@ -74,6 +75,7 @@ func verify_n_mpt_proofs{
         ids.root.high = root_high
 
         #handle key
+        ids.key_leading_zeroes = count_leading_zero_nibbles_from_hex(batch["key"])
         (key_low, key_high) = split_128(int(batch["key"], 16))
         ids.key.low = key_low
         ids.key.high = key_high
@@ -83,10 +85,9 @@ func verify_n_mpt_proofs{
         mpt_proof=proof,
         mpt_proof_bytes_len=proof_bytes_len,
         mpt_proof_len=proof_len,
-        key_little=key,
-        n_nibbles_already_checked=0,
-        node_index=0,
-        hash_to_assert=root,
+        key_be=key,
+        key_be_leading_zeroes_nibbles=key_leading_zeroes,
+        root=root,
         pow2_array=pow2_array,
     );
 
