@@ -300,6 +300,9 @@ func write_felt_array_to_dict_keys{dict_end: DictAccess*}(array: felt*, index: f
 // Returns:
 // - bit_length: felt - Number of bits in x.
 func get_felt_bitlength{range_check_ptr, pow2_array: felt*}(x: felt) -> felt {
+    if(x == 0) {
+        return 0;
+    }
     alloc_locals;
     local bit_length;
     %{
@@ -328,8 +331,12 @@ func get_felt_bitlength{range_check_ptr, pow2_array: felt*}(x: felt) -> felt {
 // Returns:
 // - bit_length: felt - Number of bits in x.
 func get_felt_bitlength_128{range_check_ptr, pow2_array: felt*}(x: felt) -> felt {
+    if(x == 0) {
+        return 0;
+    }
     alloc_locals;
     local bit_length;
+
     %{
         x = ids.x
         ids.bit_length = x.bit_length()
