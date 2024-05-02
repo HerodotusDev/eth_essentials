@@ -15,21 +15,78 @@ from starkware.cairo.common.registers import get_fp_and_pc
 const DIV_32 = 2 ** 32;
 const DIV_32_MINUS_1 = DIV_32 - 1;
 
+// Takes the hex representation and count the number of zeroes.
+// Ie: returns the number of trailing zeroes bytes.
+// If x is 0, returns 0.
+func count_trailing_zeroes_128{bitwise_ptr: BitwiseBuiltin*}(x: felt, pow2_array: felt*) -> (
+    res: felt
+) {
+    if (x == 0) {
+        return (res=0);
+    }
+    alloc_locals;
+    local trailing_zeroes_bytes;
+    %{
+        from tools.py.utils import count_trailing_zero_bytes_from_int
+        ids.trailing_zeroes_bytes = count_trailing_zero_bytes_from_int(ids.x)
+        print(f"Input: {hex(ids.x)}_{ids.trailing_zeroes_bytes}bytes")
+    %}
+    // Verify.
+    if (trailing_zeroes_bytes == 0) {
+        // Make sure the last byte is not zero.
+        let (_, last_byte) = bitwise_divmod(x, 2 ** 8);
+        if (last_byte == 0) {
+            assert 1 = 0;  // Add unsatisfiability check.
+            return (res=0);
+        } else {
+            return (res=0);
+        }
+    } else {
+        // Make sure the last trailing_zeroes_bytes are zeroes.
+        let (q, r) = bitwise_divmod(x, pow2_array[8 * trailing_zeroes_bytes]);
+        assert r = 0;
+        // Make sure the byte just before the last trailing_zeroes_bytes is not zero.
+        let (_, first_non_zero_byte) = bitwise_divmod(q, 2 ** 8);
+        if (first_non_zero_byte == 0) {
+            assert 1 = 0;  // Add unsatisfiability check.
+            return (res=0);
+        } else {
+            return (res=trailing_zeroes_bytes);
+        }
+    }
+}
 // Returns the number of bytes in a number with n_bits bits.
 // Assumptions:
 // - 0 <= n_bits < 8 * RC_BOUND
-func n_bits_to_n_bytes{range_check_ptr: felt}(n_bits: felt) -> felt {
+func n_bits_to_n_bytes{range_check_ptr: felt}(n_bits: felt) -> (res: felt) {
     if (n_bits == 0) {
-        return 0;
+        return (res=0);
     }
     let (q, r) = felt_divmod_8(n_bits);
     if (q == 0) {
-        return 1;
+        return (res=1);
     }
     if (r == 0) {
-        return q;
+        return (res=q);
     }
-    return q + 1;
+    return (res=q + 1);
+}
+
+// Returns the number of nibbles in a number with n_bits bits.
+// Assumptions:
+// - 0 <= n_bits < 4 * RC_BOUND
+func n_bits_to_n_nibbles{range_check_ptr: felt}(n_bits: felt) -> (res: felt) {
+    if (n_bits == 0) {
+        return (res=0);
+    }
+    let (q, r) = felt_divmod(n_bits, 4);
+    if (q == 0) {
+        return (res=1);
+    }
+    if (r == 0) {
+        return (res=q);
+    }
+    return (res=q + 1);
 }
 
 // Returns the number of bytes in a 128 bits number.
@@ -37,8 +94,15 @@ func n_bits_to_n_bytes{range_check_ptr: felt}(n_bits: felt) -> felt {
 // - 0 <= x < 2^128
 func get_felt_n_bytes_128{range_check_ptr: felt}(x: felt, pow2_array: felt*) -> (n_bytes: felt) {
     let n_bits = get_felt_bitlength_128{pow2_array=pow2_array}(x);
-    let n_bytes = n_bits_to_n_bytes(n_bits);
+    let (n_bytes) = n_bits_to_n_bytes(n_bits);
     return (n_bytes,);
+}
+
+// Returns the number of nibbles in a 128 bits number.
+func get_felt_n_nibbles{range_check_ptr: felt}(x: felt, pow2_array: felt*) -> (n_nibbles: felt) {
+    let n_bits = get_felt_bitlength_128{pow2_array=pow2_array}(x);
+    let (n_nibbles) = n_bits_to_n_nibbles(n_bits);
+    return (n_nibbles,);
 }
 // Returns the total number of bits in the uint256 number.
 // Assumptions :
@@ -72,31 +136,52 @@ func uint128_reverse_endian_no_padding{range_check_ptr, bitwise_ptr: BitwiseBuil
     x: felt, pow2_array: felt*
 ) -> (res: felt, n_bytes: felt) {
     alloc_locals;
+    // %{ import math %}
     let (num_bytes_input) = get_felt_n_bytes_128(x, pow2_array);
     let (x_reversed) = word_reverse_endian(x);
     let (num_bytes_reversed) = get_felt_n_bytes_128(x_reversed, pow2_array);
+    let (trailing_zeroes_input) = count_trailing_zeroes_128(x, pow2_array);
+
     if (num_bytes_input != num_bytes_reversed) {
-        let (x_reversed, _) = bitwise_divmod(
-            x_reversed, pow2_array[8 * (num_bytes_reversed - num_bytes_input)]
+        %{ print(f"\tinput: {hex(ids.x)}_{ids.num_bytes_input}bytes") %}
+        %{ print(f"\treversed: {hex(ids.x_reversed)}_{ids.num_bytes_reversed}bytes") %}
+        let (x_reversed, r) = bitwise_divmod(
+            x_reversed,
+            pow2_array[8 * (num_bytes_reversed - num_bytes_input + trailing_zeroes_input)],
         );
+        assert r = 0;  // Sanity check.
+        %{
+            import math 
+            print(f"\treversed_fixed: {hex(ids.x_reversed)}_{math.ceil(ids.x_reversed.bit_length() / 8)}bytes")
+        %}
         return (res=x_reversed, n_bytes=num_bytes_input);
     }
     return (res=x_reversed, n_bytes=num_bytes_input);
 }
 
-// Takes a uint256 number, reverse its byte endianness without adding right-padding
+// Takes a uint256 number, reverse its byte endianness without adding right-padding and returns the number of bytes.
 func uint256_reverse_endian_no_padding{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     x: Uint256, pow2_array: felt*
-) -> (res: Uint256) {
+) -> (res: Uint256, n_bytes: felt) {
     alloc_locals;
     if (x.high != 0) {
         let (high_reversed, n_bytes_high) = uint128_reverse_endian_no_padding(x.high, pow2_array);
-        let (low_reversed) = word_reverse_endian(x.low);
+        %{ print(f"High: {hex(ids.high_reversed)}_{ids.high_reversed.bit_length()}b {ids.n_bytes_high}bytes") %}
+        let (low_reversed, n_bytes_low) = uint128_reverse_endian_no_padding(x.low, pow2_array);
+        %{ print(f"Low: {hex(ids.low_reversed)}_{ids.low_reversed.bit_length()}b {ids.n_bytes_low}bytes") %}
+        let low_reversed = low_reversed * pow2_array[8 * (16 - n_bytes_low)];  // Righ pad with 0 to make it 128 bits.
+        %{ print(f"Low: {hex(ids.low_reversed)}_{ids.low_reversed.bit_length()}b") %}
+
         let (q, r) = bitwise_divmod(low_reversed, pow2_array[8 * (16 - n_bytes_high)]);
-        return (res=Uint256(low=high_reversed + pow2_array[8 * n_bytes_high] * r, high=q));
+        %{ print(f"Q: {hex(ids.q)}") %}
+        %{ print(f"R: {hex(ids.r)}") %}
+        return (
+            res=Uint256(low=high_reversed + pow2_array[8 * n_bytes_high] * r, high=q),
+            n_bytes=16 + n_bytes_high,
+        );
     } else {
-        let (low_reversed, _) = uint128_reverse_endian_no_padding(x.low, pow2_array);
-        return (res=Uint256(low=low_reversed, high=0));
+        let (low_reversed, n_bytes_low) = uint128_reverse_endian_no_padding(x.low, pow2_array);
+        return (res=Uint256(low=low_reversed, high=0), n_bytes=n_bytes_low);
     }
 }
 

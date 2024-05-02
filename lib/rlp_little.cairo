@@ -1,7 +1,12 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.memcpy import memcpy
-from starkware.cairo.common.uint256 import Uint256, uint256_pow2, uint256_unsigned_div_rem
+from starkware.cairo.common.uint256 import (
+    Uint256,
+    uint256_pow2,
+    uint256_unsigned_div_rem,
+    uint256_mul,
+)
 from starkware.cairo.common.alloc import alloc
 from lib.utils import (
     felt_divmod_8,
@@ -10,7 +15,18 @@ from lib.utils import (
     word_reverse_endian_64,
     bitwise_divmod,
     get_felt_bitlength_128,
+    uint256_reverse_endian_no_padding,
+    n_bits_to_n_bytes,
+    get_uint256_bit_length,
+    get_felt_n_nibbles,
+    n_bits_to_n_nibbles,
 )
+
+func n_nibbles_in_key{range_check_ptr}(key: Uint256, pow2_array: felt*) -> (res: felt) {
+    let (num_bits_in_key) = get_uint256_bit_length(key, pow2_array);
+    let (num_nibbles_in_key) = n_bits_to_n_nibbles(num_bits_in_key);
+    return (res=num_nibbles_in_key);
+}
 
 // Takes a 64 bit word in little endian, returns the byte at a given position as it would be in big endian.
 // Ie: word = b7 b6 b5 b4 b3 b2 b1 b0
@@ -77,181 +93,246 @@ func key_subset_to_uint256(key_subset: felt*, key_subset_len: felt) -> Uint256 {
     let res = Uint256(low=0, high=0);
     return res;
 }
-// params:
-// key_subset : array of 64 bit words with little endian bytes, representing a subset of the key
-// key_subset_len : length of the subset in number of 64 bit words
-// key_subset_bytes_len : length of the subset in number of nibbles
-// key subset is of the form [b7 b6 b5 b4 b3 b2 b1 b0, b15 b14 b13 b12 b11 b10 b9 b8, ...]
-// key_little : 256 bit key in little endian
-// key_little is of the form high = [b63, ..., b32] , low = [b31, ..., b0]
-// returns the actual number of nibbles checked from key_subset within the actual key_little
-func assert_subset_in_key{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+
+// Asserts that a subset of the key is in the key in big endian at the correct position given:
+// the length of the key subset, the full key, and the nibbles already checked in the full key.
+// - key_subset: array of 8 little endian bytes extracted from rlp array.
+// - key_subset_len: the length of the key subset (in # of words)
+// - key_subset_nibble_len: the number of nibbles in the key subset. Deduced from rlp encoding.
+// - key_be: the key to check as a big endian Uint256 number.
+// - key_be_nibbles: the number of nibbles in the key (excluding leading zeroes).
+// - key_be_leading_zeroes_nibbles: the number of leading zeroes nibbles in the key.
+// - n_nibbles_already_checked: the number of nibbles already checked in the key.
+// - cut_nibble: 1 if the first nibble from the extracted key needs to be cut. 0 otherwise.
+// - pow2_array: array of powers of 2.
+// Ex : Full Key is 0x012345678
+// Nibbles checked is 2
+// Key subset is 0x4523 (little endian)
+// First key subset is going to be reversed to big endian : 0x2345
+// Then Full Key will first be cutted to 0x2345678 (n_nibbles checked removed on the left)
+// Then again cutted to 0x2345 (keep key_subset_nibble_len on the left)
+// Then the key subset will be asserted against the cutted key.
+func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     key_subset: felt*,
     key_subset_len: felt,
     key_subset_nibble_len: felt,
-    key_little: Uint256,
+    key_be: Uint256,
+    key_be_nibbles: felt,
+    key_be_leading_zeroes_nibbles: felt,
     n_nibbles_already_checked: felt,
     cut_nibble: felt,
     pow2_array: felt*,
-) -> (n_nibbles_checked: felt) {
+) {
     alloc_locals;
-    let key_subset_256t = key_subset_to_uint256(key_subset, key_subset_len);
-    %{ print(f"key_susbet_uncut={hex(ids.key_subset_256t.low + ids.key_subset_256t.high*2**128)}") %}
+    // Get the little endian 256 bit number from the extracted 64 bit le words array :
+    let key_subset_256_le = key_subset_to_uint256(key_subset, key_subset_len);
+    %{
+        key_subset_256_le = hex(ids.key_subset_256_le.low + ids.key_subset_256_le.high*2**128)[2:]
+        print(f"Key subset 256 le: {key_subset_256_le}")
+    %}
+    let (key_subset_be_tmp: Uint256, n_bytes: felt) = uint256_reverse_endian_no_padding(
+        key_subset_256_le, pow2_array
+    );
+    %{
+        orig_key = hex(ids.key_be.low + ids.key_be.high*2**128)[2:]
+        key_subset = hex(ids.key_subset_be_tmp.low + ids.key_subset_be_tmp.high*2**128)[2:]
+        print(f"Orig key: {orig_key}, n_nibbles={len(orig_key)}")
+        print(f"Key subset: {key_subset}, n_nibbles={len(key_subset)}")
+    %}
 
-    local key_subset_256: Uint256;
-    local key_subset_last_nibble: felt;
-
-    let (_, odd_checked_nibbles) = felt_divmod(n_nibbles_already_checked, 2);
-
+    // Cut nibble of the key subset if needed from the leftmost position. 0x123 -> 0x23
+    local key_subset_be: Uint256;
+    local bitwise_ptr_f: BitwiseBuiltin*;
     if (cut_nibble != 0) {
         %{ print(f"Cut nibble") %}
-        let (key_subset_256ltmp, byte) = felt_divmod(key_subset_256t.low, 2 ** 8);
-        let (key_subset_256h, acc) = felt_divmod(key_subset_256t.high, 2 ** 8);
-        let (_, nibble) = felt_divmod(byte, 2 ** 4);
-        assert key_subset_256.low = key_subset_256ltmp + acc * 2 ** (128 - 8);
-        assert key_subset_256.high = key_subset_256h;
-        assert key_subset_last_nibble = nibble;
-        tempvar range_check_ptr = range_check_ptr;
-    } else {
-        assert key_subset_256.low = key_subset_256t.low;
-        assert key_subset_256.high = key_subset_256t.high;
-        assert key_subset_last_nibble = 0;
-        tempvar range_check_ptr = range_check_ptr;
-    }
-    %{ print(f"key_susbet_cutted={hex(ids.key_subset_256.low + ids.key_subset_256.high*2**128)}") %}
-    %{ print(f"key_little={hex(ids.key_little.low + ids.key_little.high*2**128)}") %}
-
-    local key_shifted: Uint256;
-    local key_shifted_last_nibble: felt;
-    if (odd_checked_nibbles != 0) {
-        let (upow) = uint256_pow2(Uint256((n_nibbles_already_checked + 1) * 4, 0));  // p = 2**(n_nib_checked+1)
-        let (key_shiftedt, rem) = uint256_unsigned_div_rem(key_little, upow);  //
-        let (upow_) = uint256_pow2(Uint256((n_nibbles_already_checked - 1) * 4, 0));
-        let (byte_u256, _) = uint256_unsigned_div_rem(rem, upow_);
-        let (_, nibble) = felt_divmod(byte_u256.low, 2 ** 4);
-        assert key_shifted.low = key_shiftedt.low;
-        assert key_shifted.high = key_shiftedt.high;
-        assert key_shifted_last_nibble = nibble;
-        tempvar range_check_ptr = range_check_ptr;
-    } else {
-        let (upow) = uint256_pow2(Uint256(n_nibbles_already_checked * 4, 0));
-        let (key_shiftedt, _) = uint256_unsigned_div_rem(key_little, upow);
-        assert key_shifted.low = key_shiftedt.low;
-        assert key_shifted.high = key_shiftedt.high;
-        assert key_shifted_last_nibble = 0;
-        tempvar range_check_ptr = range_check_ptr;
-    }
-
-    %{ print(f"key_shifted={hex(ids.key_shifted.low + ids.key_shifted.high*2**128)}") %}
-
-    if (key_subset_256.high != 0) {
-        // caution : high part must have less or equal 30 nibbles. for felt divmod.
-        let n_nibble_in_high_part = key_subset_nibble_len - 32;
-        let (_, key_high) = bitwise_divmod{bitwise_ptr=bitwise_ptr}(
-            key_shifted.high, pow2_array[4 * n_nibble_in_high_part]
-        );
-
-        %{
-            print(f"\t N nibbles in right part : {ids.n_nibble_in_high_part}") 
-            print(f"\t orig key high : {hex(ids.key_little.high)}")
-            print(f"\t key shifted high : {hex(ids.key_shifted.high)}")
-            print(f"\t final key high : {hex(ids.key_high)}")
-            print(f"\t key subset high : {hex(ids.key_subset_256.high)}")
-        %}
-        local key_subset_nibbles;
-        let key_subset_bits = get_felt_bitlength_128{pow2_array=pow2_array}(key_subset_256.high);
-        let (key_subset_nibbles_tmp, remainder) = felt_divmod(128 + key_subset_bits, 4);
-        if (remainder != 0) {
-            assert key_subset_nibbles = key_subset_nibbles_tmp + 1;
+        if (key_subset_be_tmp.high != 0) {
+            let (_, key_susbet_be_high) = bitwise_divmod(
+                key_subset_be_tmp.high, pow2_array[8 * (n_bytes - 16) - 4]
+            );
+            assert key_subset_be.low = key_subset_be_tmp.low;
+            assert key_subset_be.high = key_susbet_be_high;
+            assert bitwise_ptr_f = bitwise_ptr;
         } else {
-            assert key_subset_nibbles = key_subset_nibbles_tmp;
+            let (_, key_susbet_be_low) = bitwise_divmod(
+                key_subset_be.low, pow2_array[8 * n_bytes - 4]
+            );
+            assert key_subset_be.low = key_susbet_be_low;
+            assert key_subset_be.high = 0;
+            assert bitwise_ptr_f = bitwise_ptr;
         }
-        assert key_subset_256.low = key_shifted.low;
-        assert key_subset_256.high = key_high;
-        assert key_subset_last_nibble = key_shifted_last_nibble;
-        return (n_nibbles_checked=key_subset_nibbles + cut_nibble);
     } else {
-        let (_, key_low) = felt_divmod(key_shifted.low, pow2_array[4 * key_subset_nibble_len]);
-        assert key_subset_256.low = key_low;
-        assert key_subset_256.high = 0;
-        assert key_subset_last_nibble = key_shifted_last_nibble;
-        local key_subset_nibbles;
-        let key_subset_bits = get_felt_bitlength_128{pow2_array=pow2_array}(key_subset_256.low);
-        let (key_subset_nibbles_tmp, remainder) = felt_divmod(key_subset_bits, 4);
-
-        if (remainder != 0) {
-            assert key_subset_nibbles = key_subset_nibbles_tmp + 1;
-        } else {
-            assert key_subset_nibbles = key_subset_nibbles_tmp;
-        }
-
-        return (n_nibbles_checked=key_subset_nibbles + cut_nibble);
+        assert key_subset_be.low = key_subset_be_tmp.low;
+        assert key_subset_be.high = key_subset_be_tmp.high;
+        assert bitwise_ptr_f = bitwise_ptr;
     }
+    // Right pad with 0's if nibble lens don't match.
+    local range_check_ptr_f;
+    local key_subset_be_final: Uint256;
+    let (key_subset_bits) = get_uint256_bit_length(key_subset_be, pow2_array);
+    let (key_subset_nibbles) = n_bits_to_n_nibbles(key_subset_bits);
+
+    if (key_subset_nibbles != key_subset_nibble_len) {
+        // Nibbles lens don't match.
+        %{ print(f"Nibbles lens don't match: {ids.key_subset_nibbles=} != {ids.key_subset_nibble_len=}") %}
+        // This either come from the first byte being of the form 0x0n (Nothing to do).
+        // Or from the last nibbles being 0. Need to right pad with 0's until the expected nibble len.
+        let (_, first_byte) = felt_divmod(key_subset[0], 2 ** 8);
+        %{ print(f"First word {hex(memory[ids.key_subset])}, first_byte={hex(ids.first_byte)}") %}
+        local first_nibble;
+        let (q, r) = felt_divmod(first_byte, 2 ** 4);
+        if (cut_nibble != 0) {
+            // If nibble needed to be cut, the first nibble is actually the second one
+            assert first_nibble = r;
+        } else {
+            // If nibble not needed to be cut, the first nibble is the first one
+            assert first_nibble = q;
+        }
+        %{ print(f"First nibble: {hex(ids.first_nibble)}") %}
+        if (first_nibble != 0) {
+            // Right pad with 0's
+            %{ print(f"Right pad with 0's") %}
+            let (u256_pow) = uint256_pow2(
+                Uint256((key_subset_nibble_len - key_subset_nibbles) * 4, 0)
+            );
+            let (res_tmp, _) = uint256_mul(key_subset_be, u256_pow);
+            assert key_subset_be_final.low = res_tmp.low;
+            assert key_subset_be_final.high = res_tmp.high;
+            assert range_check_ptr_f = range_check_ptr;
+        } else {
+            %{ print(f"Do nothing") %}
+            // If the very first nibble is 0, do nothing. Assertions will pass.
+            assert key_subset_be_final.low = key_subset_be.low;
+            assert key_subset_be_final.high = key_subset_be.high;
+            assert range_check_ptr_f = range_check_ptr;
+        }
+    } else {
+        %{ print(f"Do nothing. Nibble lens match") %}
+        // Do nothing if the nibble lens match. Assertions will pass.
+        assert key_subset_be_final.low = key_subset_be.low;
+        assert key_subset_be_final.high = key_subset_be.high;
+        assert range_check_ptr_f = range_check_ptr;
+    }
+    %{ print(f"Key subset final: {hex(ids.key_subset_be_final.low + ids.key_subset_be_final.high*2**128)}") %}
+    let bitwise_ptr = bitwise_ptr_f;
+    let range_check_ptr = range_check_ptr_f;
+    // Remove n_nibbles_already_checked nibbles from the left part of the key
+    %{ print(f"Remove {ids.n_nibbles_already_checked} nibbles from the left part of the key") %}
+    let (u256_power) = uint256_pow2(
+        Uint256((key_be_nibbles + key_be_leading_zeroes_nibbles - n_nibbles_already_checked) * 4, 0)
+    );
+    let (_, key_shifted) = uint256_unsigned_div_rem(key_be, u256_power);
+    %{ print(f"Key shifted: {hex(ids.key_shifted.low + ids.key_shifted.high*2**128)}") %}
+
+    // Remove rightmost part of the key, keep only key_subset_nibble_len nibbles on the left
+    %{
+        print(f"Remove rightmost part of the key, keep only {ids.key_subset_nibble_len} nibbles on the left")
+        power = ids.key_be_nibbles + ids.key_be_leading_zeroes_nibbles - ids.n_nibbles_already_checked - ids.key_subset_nibble_len
+        print(f"Computing 2**({power}) = {power/4} nibbles = {power/8} bytes")
+    %}
+    let (u256_power) = uint256_pow2(
+        Uint256(
+            4 * (
+                key_be_nibbles +
+                key_be_leading_zeroes_nibbles -
+                n_nibbles_already_checked -
+                key_subset_nibble_len
+            ),
+            0,
+        ),
+    );
+    let (key_shifted, _) = uint256_unsigned_div_rem(key_shifted, u256_power);
+    %{ print(f"Key shifted final: {hex(ids.key_shifted.low + ids.key_shifted.high*2**128)}") %}
+    assert key_subset_be_final.low = key_shifted.low;
+    assert key_subset_be_final.high = key_shifted.high;
+    return ();
 }
 
-// From a key with reverse little endian bytes of the form :
-// key = n62 n63 n60 n61 n58 n59 n56 n57 n54 n55 n52 n53 n50 n51 n48 n49 n46 n47 n44 n45 n42 n43 n40 n41 n38 n39 n36 n37 n34 n35 n32 n33 n30 n31 n28 n29 n26 n27 n24 n25 n22 n23 n20 n21 n18 n19 n16 n17 n14 n15 n12 n13 n10 n11 n8 n9 n6 n7 n4 n5 n2 n3 n0 n1
+// From a 256 bit key in big endian of the form :
+// key = n0 n1 n2 ... n62 n63
 // returns ni such that i = nibble_index
-// Since key is assumed to be in little endian, nibble index is ordered to start from the most significant nibble for the big endian representation,
-// ie : nibble_index = 0 => most significant nibble of key in big endian
-func extract_nibble_from_key{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
-    key: Uint256, nibble_index: felt, pow2_array: felt*
+// Params:
+// key: the Uint256 number representing the key in big endian
+// key_nibbles: the number of nibbles in the key (excluding leading zeroes)
+// key_leading_zeroes_nibbles: the number of leading zeroes nibbles in the key
+// nibble_index: the index of the nibble to extract
+// pow2_array: array of powers of 2
+func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    key: Uint256,
+    key_nibbles: felt,
+    key_leading_zeroes_nibbles: felt,
+    nibble_index: felt,
+    pow2_array: felt*,
 ) -> felt {
     alloc_locals;
-    local get_nibble_from_low: felt;
-    local nibble_pos: felt;
-    %{
-        ids.get_nibble_from_low = 1 if 0 <= ids.nibble_index <= 31 else 0
-        ids.nibble_pos = ids.nibble_index % 2
-    %}
-    %{
-        print(f"Key low: {hex(ids.key.low)}")
-        print(f"Key high: {hex(ids.key.high)}")
-        print(f"nibble_index: {ids.nibble_index}")
-    %}
-    if (get_nibble_from_low != 0) {
-        if (nibble_pos != 0) {
-            %{ print(f"\t case 0 ") %}
-            assert [range_check_ptr] = 31 - nibble_index;
-            assert bitwise_ptr.x = key.low;
-            assert bitwise_ptr.y = 0xf * pow2_array[4 * (nibble_index - 1)];
-            let extracted_nibble_at_pos = bitwise_ptr.x_and_y / pow2_array[4 * (nibble_index - 1)];
-            tempvar range_check_ptr = range_check_ptr + 1;
-            tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-            return extracted_nibble_at_pos;
-        } else {
-            %{ print(f"\t case 1 ") %}
-
-            assert [range_check_ptr] = 31 - nibble_index;
-            assert bitwise_ptr.x = key.low;
-            assert bitwise_ptr.y = 0xf * pow2_array[4 * nibble_index + 4];
-            let extracted_nibble_at_pos = bitwise_ptr.x_and_y / pow2_array[4 * nibble_index + 4];
-            tempvar range_check_ptr = range_check_ptr + 1;
-            tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-            return extracted_nibble_at_pos;
-        }
+    local is_zero;
+    %{ ids.is_zero = 1 if ids.nibble_index <= (ids.key_leading_zeroes_nibbles - 1) else 0 %}
+    if (is_zero != 0) {
+        // %{ print(f"\t {ids.nibble_index} <= {ids.key_leading_zeroes_nibbles - 1}") %}
+        // nibble_index is in [0, key_leading_zeroes_nibbles - 1]
+        assert [range_check_ptr] = (key_leading_zeroes_nibbles - 1) - nibble_index;
+        tempvar range_check_ptr = range_check_ptr + 1;
+        return 0;
     } else {
-        if (nibble_pos != 0) {
-            %{ print(f"\t case 2 ") %}
-
-            assert [range_check_ptr] = 31 - (nibble_index - 32);
-            tempvar offset = pow2_array[4 * (nibble_index - 32)];
-            assert bitwise_ptr.x = key.high;
-            assert bitwise_ptr.y = 0xf * offset;
-            let extracted_nibble_at_pos = bitwise_ptr.x_and_y / offset;
+        // %{ print(f"\t {ids.nibble_index} > {ids.key_leading_zeroes_nibbles - 1}") %}
+        // nibble_index is >= key_leading_zeroes_nibbles
+        assert [range_check_ptr] = nibble_index - key_leading_zeroes_nibbles;
+        tempvar range_check_ptr = range_check_ptr + 1;
+        // Reindex nibble_index to start from 0 accounting for the leading zeroes
+        // Ex: key is 0x00abc. Nibble index is 2 (=> nibble is "a"). Reindexed nibble index is then 2-2=0.
+        let nibble_index = nibble_index - key_leading_zeroes_nibbles;
+        local get_nibble_from_low: felt;
+        // we get the nibble from low part of key either if :
+        // - nibble_index is in [0, 31] and key_nibbles <= 32
+        // - nibble_index is in [32, 63] and key_nibbles > 32
+        // Consenquently, we get the nibble from high part of the key only if :
+        // - nibble_index is in [0, 31] and key_nibbles > 32
+        %{ ids.get_nibble_from_low = 1 if (0 <= ids.nibble_index <= 31 and ids.key_nibbles <= 32) or (32 <= ids.nibble_index <= 63 and ids.key_nibbles > 32) else 0 %}
+        if (key.high != 0) {
+            // key_nibbles > 32
+        }
+        %{
+            #print(f"Key low: {hex(ids.key.low)}")
+            #print(f"Key high: {hex(ids.key.high)}")
+            #print(f"nibble_index: {ids.nibble_index}")
+            #print(f"key_nibbles: {ids.key_nibbles}")
+            #print(f"key_leading_zeroes_nibbles: {ids.key_leading_zeroes_nibbles}")
+            key_hex = ids.key_leading_zeroes_nibbles*'0'+hex(ids.key.low + 2**128*ids.key.high)[2:]
+            #print(f"Key hex: {key_hex}")
+            expected_nibble = int(key_hex[ids.nibble_index+ids.key_leading_zeroes_nibbles], 16)
+        %}
+        if (get_nibble_from_low != 0) {
+            local offset;
+            if (key.high != 0) {
+                // key_nibbles > 32. Then nibble_index must be in [32, 63]
+                assert [range_check_ptr] = 31 - (nibble_index - 32);
+                assert offset = pow2_array[4 * (32 - nibble_index - 1)];
+            } else {
+                // key_nibbles <= 32. Then nibble_index must be in [0, 31]
+                assert [range_check_ptr] = 31 - nibble_index;
+                assert offset = pow2_array[4 * (key_nibbles - nibble_index - 1)];
+            }
             tempvar range_check_ptr = range_check_ptr + 1;
+            assert bitwise_ptr.x = key.low;
+            assert bitwise_ptr.y = 0xf * offset;
+            tempvar extracted_nibble_at_pos = bitwise_ptr.x_and_y / offset;
             tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+            %{ assert ids.extracted_nibble_at_pos == expected_nibble, f"extracted_nibble_at_pos={ids.extracted_nibble_at_pos} expected_nibble={expected_nibble}" %}
             return extracted_nibble_at_pos;
         } else {
-            %{ print(f"\t case 3 ") %}
-
-            assert [range_check_ptr] = 31 - (nibble_index - 32);
-            tempvar offset = pow2_array[4 * (nibble_index - 32) + 4];
+            // Extract nibble from high part of key
+            // nibble index must be in [0, 31] and key_nibbles > 32
+            assert [range_check_ptr] = 31 - nibble_index;
+            if (key.high == 0) {
+                assert 1 = 0;
+            }
+            tempvar offset = pow2_array[4 * (key_nibbles - 32 - nibble_index - 1)];
             assert bitwise_ptr.x = key.high;
             assert bitwise_ptr.y = 0xf * offset;
-            let extracted_nibble_at_pos = bitwise_ptr.x_and_y / offset;
+            tempvar extracted_nibble_at_pos = bitwise_ptr.x_and_y / offset;
             tempvar range_check_ptr = range_check_ptr + 1;
             tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
+            %{ assert ids.extracted_nibble_at_pos == expected_nibble, f"extracted_nibble_at_pos={ids.extracted_nibble_at_pos} expected_nibble={expected_nibble}" %}
+
             return extracted_nibble_at_pos;
         }
     }
