@@ -154,7 +154,7 @@ func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             assert bitwise_ptr_f = bitwise_ptr;
         } else {
             let (_, key_susbet_be_low) = bitwise_divmod(
-                key_subset_be.low, pow2_array[8 * n_bytes - 4]
+                key_subset_be_tmp.low, pow2_array[8 * n_bytes - 4]
             );
             assert key_subset_be.low = key_susbet_be_low;
             assert key_subset_be.high = 0;
