@@ -242,6 +242,7 @@ func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     );
     let (key_shifted, _) = uint256_unsigned_div_rem(key_shifted, u256_power);
     %{ print(f"Key shifted final: {hex(ids.key_shifted.low + ids.key_shifted.high*2**128)}") %}
+    %{ print(f"key subset expect: {hex(ids.key_subset_be_final.low + ids.key_subset_be_final.high*2**128)}") %}
     assert key_subset_be_final.low = key_shifted.low;
     assert key_subset_be_final.high = key_shifted.high;
     return ();
