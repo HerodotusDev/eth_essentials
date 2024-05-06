@@ -17,19 +17,19 @@ const DIV_32_MINUS_1 = DIV_32 - 1;
 
 // Takes the hex representation and count the number of zeroes.
 // Ie: returns the number of trailing zeroes bytes.
-// If x is 0, returns 0.
+// If x is 0, returns 16.
 func count_trailing_zeroes_128{bitwise_ptr: BitwiseBuiltin*}(x: felt, pow2_array: felt*) -> (
     res: felt
 ) {
     if (x == 0) {
-        return (res=0);
+        return (res=16);
     }
     alloc_locals;
     local trailing_zeroes_bytes;
     %{
         from tools.py.utils import count_trailing_zero_bytes_from_int
         ids.trailing_zeroes_bytes = count_trailing_zero_bytes_from_int(ids.x)
-        print(f"Input: {hex(ids.x)}_{ids.trailing_zeroes_bytes}bytes")
+        #print(f"Input: {hex(ids.x)}_{ids.trailing_zeroes_bytes}Tr_Zerobytes")
     %}
     // Verify.
     if (trailing_zeroes_bytes == 0) {
@@ -55,6 +55,7 @@ func count_trailing_zeroes_128{bitwise_ptr: BitwiseBuiltin*}(x: felt, pow2_array
         }
     }
 }
+
 // Returns the number of bytes in a number with n_bits bits.
 // Assumptions:
 // - 0 <= n_bits < 8 * RC_BOUND
@@ -136,24 +137,23 @@ func uint128_reverse_endian_no_padding{range_check_ptr, bitwise_ptr: BitwiseBuil
     x: felt, pow2_array: felt*
 ) -> (res: felt, n_bytes: felt) {
     alloc_locals;
-    // %{ import math %}
     let (num_bytes_input) = get_felt_n_bytes_128(x, pow2_array);
     let (x_reversed) = word_reverse_endian(x);
     let (num_bytes_reversed) = get_felt_n_bytes_128(x_reversed, pow2_array);
     let (trailing_zeroes_input) = count_trailing_zeroes_128(x, pow2_array);
 
     if (num_bytes_input != num_bytes_reversed) {
-        %{ print(f"\tinput: {hex(ids.x)}_{ids.num_bytes_input}bytes") %}
-        %{ print(f"\treversed: {hex(ids.x_reversed)}_{ids.num_bytes_reversed}bytes") %}
+        // %{ print(f"\tinput128: {hex(ids.x)}_{ids.num_bytes_input}bytes") %}
+        // %{ print(f"\treversed: {hex(ids.x_reversed)}_{ids.num_bytes_reversed}bytes") %}
         let (x_reversed, r) = bitwise_divmod(
             x_reversed,
             pow2_array[8 * (num_bytes_reversed - num_bytes_input + trailing_zeroes_input)],
         );
         assert r = 0;  // Sanity check.
-        %{
-            import math 
-            print(f"\treversed_fixed: {hex(ids.x_reversed)}_{math.ceil(ids.x_reversed.bit_length() / 8)}bytes")
-        %}
+        // %{
+        //     import math
+        //     print(f"\treversed_fixed: {hex(ids.x_reversed)}_{math.ceil(ids.x_reversed.bit_length() / 8)}bytes")
+        // %}
         return (res=x_reversed, n_bytes=num_bytes_input);
     }
     return (res=x_reversed, n_bytes=num_bytes_input);
@@ -166,15 +166,13 @@ func uint256_reverse_endian_no_padding{range_check_ptr, bitwise_ptr: BitwiseBuil
     alloc_locals;
     if (x.high != 0) {
         let (high_reversed, n_bytes_high) = uint128_reverse_endian_no_padding(x.high, pow2_array);
-        %{ print(f"High: {hex(ids.high_reversed)}_{ids.high_reversed.bit_length()}b {ids.n_bytes_high}bytes") %}
-        let (low_reversed, n_bytes_low) = uint128_reverse_endian_no_padding(x.low, pow2_array);
-        %{ print(f"Low: {hex(ids.low_reversed)}_{ids.low_reversed.bit_length()}b {ids.n_bytes_low}bytes") %}
-        let low_reversed = low_reversed * pow2_array[8 * (16 - n_bytes_low)];  // Righ pad with 0 to make it 128 bits.
-        %{ print(f"Low: {hex(ids.low_reversed)}_{ids.low_reversed.bit_length()}b") %}
+        // %{ print(f"High_Rev: {hex(ids.high_reversed)}_{ids.high_reversed.bit_length()}b {ids.n_bytes_high}bytes") %}
+        let (low_reversed) = word_reverse_endian(x.low);
+        // %{ print(f"Low_rev: {hex(ids.low_reversed)}_{ids.low_reversed.bit_length()}b") %}
 
         let (q, r) = bitwise_divmod(low_reversed, pow2_array[8 * (16 - n_bytes_high)]);
-        %{ print(f"Q: {hex(ids.q)}") %}
-        %{ print(f"R: {hex(ids.r)}") %}
+        // %{ print(f"Q: {hex(ids.q)}") %}
+        // %{ print(f"R: {hex(ids.r)}") %}
         return (
             res=Uint256(low=high_reversed + pow2_array[8 * n_bytes_high] * r, high=q),
             n_bytes=16 + n_bytes_high,
