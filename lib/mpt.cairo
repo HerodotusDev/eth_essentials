@@ -43,7 +43,7 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
     root: Uint256,
     pow2_array: felt*,
 ) -> (value: felt*, value_len: felt) {
-    %{ print(f"Veryfing key 0x{'0'*ids.key_be_leading_zeroes_nibbles}{hex(ids.key_be.low+2**128*ids.key_be.high)[2:]}") %}
+    // %{ print(f"Veryfing key 0x{'0'*ids.key_be_leading_zeroes_nibbles}{hex(ids.key_be.low+2**128*ids.key_be.high)[2:]}") %}
     // Verify the key is a valid Uint256 number.
     assert [range_check_ptr] = key_be.low;
     assert [range_check_ptr + 1] = key_be.high;
@@ -97,8 +97,8 @@ func verify_mpt_proof_inner{
         // Check that the final accumulated key is the expected one.
         // Check the total number of nibbles in the key is equal to the number of nibbles checked in the key.
         let (node_hash: Uint256) = keccak(mpt_proof[node_index], mpt_proof_bytes_len[node_index]);
-        %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
-        %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
+        // %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
+        // %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
         assert node_hash.low - hash_to_assert.low = 0;
         assert node_hash.high - hash_to_assert.high = 0;
 
@@ -119,11 +119,11 @@ func verify_mpt_proof_inner{
         // Check that the hash of the current node is the expected one.
 
         let (node_hash: Uint256) = keccak(mpt_proof[node_index], mpt_proof_bytes_len[node_index]);
-        %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
-        %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
+        // %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
+        // %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
         assert node_hash.low - hash_to_assert.low = 0;
         assert node_hash.high - hash_to_assert.high = 0;
-        %{ print(f"\t Hash assert for node {ids.node_index} passed.") %}
+        // %{ print(f"\t Hash assert for node {ids.node_index} passed.") %}
         let (n_nibbles_checked, item_of_interest, item_of_interest_len) = decode_node_list_lazy(
             rlp=mpt_proof[node_index],
             bytes_len=mpt_proof_bytes_len[node_index],
@@ -169,10 +169,10 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     %{
         if 0xc0 <= ids.list_prefix <= 0xf7:
             ids.long_short_list = 0
-            print("List type : short")
+            #print("List type : short")
         elif 0xf8 <= ids.list_prefix <= 0xff:
             ids.long_short_list = 1
-            print("List type: long")
+            #print("List type: long")
         else:
             print("Not a list.")
     %}
@@ -194,12 +194,12 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         assert list_len = list_prefix - 0xc0;
     }
     // At this point, if input is neither a long nor a short list, then the range check will fail.
-    %{ print("list_len", ids.list_len) %}
-    %{ print("first word", memory[ids.rlp]) %}
+    // %{ print("list_len", ids.list_len) %}
+    // %{ print("first word", memory[ids.rlp]) %}
     assert [range_check_ptr + 2] = 7 - first_item_start_offset;
     // We now need to differentiate between the type of nodes: extension/leaf or branch.
 
-    %{ print("first item starts at byte", ids.first_item_start_offset) %}
+    // %{ print("first item starts at byte", ids.first_item_start_offset) %}
     let first_item_prefix = extract_byte_at_pos(rlp[0], first_item_start_offset, pow2_array);
 
     // %{ print("First item prefix", hex(ids.first_item_prefix)) %}
@@ -227,20 +227,20 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         tempvar range_check_ptr = range_check_ptr + 5;
     } else {
         // Single byte
-        %{ print(f"First item is single byte, comuting secondintem") %}
+        // %{ print(f"First item is single byte, computing second item") %}
         assert [range_check_ptr + 3] = 0x7f - first_item_prefix;
         assert first_item_len = 1;
         assert second_item_starts_at_byte = first_item_start_offset + first_item_len;
         tempvar range_check_ptr = range_check_ptr + 4;
     }
-    %{ print("first item len:", ids.first_item_len, "bytes") %}
-    %{ print("second_item_starts_at_byte", ids.second_item_starts_at_byte) %}
+    // %{ print("first item len:", ids.first_item_len, "bytes") %}
+    // %{ print("second_item_starts_at_byte", ids.second_item_starts_at_byte) %}
     let (second_item_starts_at_word, second_item_start_offset) = felt_divmod(
         second_item_starts_at_byte, 8
     );
-    %{ print("second_item_starts_at_word", ids.second_item_starts_at_word) %}
-    %{ print("second_item_start_offset", ids.second_item_start_offset) %}
-    %{ print("second_item_first_word", memory[ids.rlp + ids.second_item_starts_at_word]) %}
+    // %{ print("second_item_starts_at_word", ids.second_item_starts_at_word) %}
+    // %{ print("second_item_start_offset", ids.second_item_start_offset) %}
+    // %{ print("second_item_first_word", memory[ids.rlp + ids.second_item_starts_at_word]) %}
 
     let second_item_prefix = extract_byte_at_pos(
         rlp[second_item_starts_at_word], second_item_start_offset, pow2_array
@@ -250,13 +250,13 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     %{
         if 0x00 <= ids.second_item_prefix <= 0x7f:
             ids.second_item_type = 0
-            print(f"2nd item : single byte")
+            #print(f"2nd item : single byte")
         elif 0x80 <= ids.second_item_prefix <= 0xb7:
             ids.second_item_type = 1
-            print(f"2nd item : short string {ids.second_item_prefix - 0x80} bytes")
+            #print(f"2nd item : short string {ids.second_item_prefix - 0x80} bytes")
         elif 0xb8 <= ids.second_item_prefix <= 0xbf:
             ids.second_item_type = 2
-            print(f"2nd item : long string (len_len {ids.second_item_prefix - 0xb7} bytes)")
+            #print(f"2nd item : long string (len_len {ids.second_item_prefix - 0xb7} bytes)")
         else:
             print(f"2nd item : unknown type {ids.second_item_prefix}")
     %}
@@ -324,7 +324,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 tempvar range_check_ptr = range_check_ptr;
             }
 
-            %{ print(f"second_item_long_string_len : {ids.second_item_bytes_len} bytes") %}
+            // %{ print(f"second_item_long_string_len : {ids.second_item_bytes_len} bytes") %}
             assert third_item_starts_at_byte = second_item_starts_at_byte + 1 + len_len +
                 second_item_bytes_len;
             assert range_check_ptr_f = range_check_ptr;
@@ -337,7 +337,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     // %{ print(f"third item starts at byte {ids.third_item_starts_at_byte}") %}
 
     if (third_item_starts_at_byte == bytes_len) {
-        %{ print("two items => Leaf/Extension case") %}
+        // %{ print("two items => Leaf/Extension case") %}
 
         // Node's list has only 2 items : it's a leaf or an extension.
         // Regardless, we need to decode the first item (key or key_end) and the second item (hash or value).
@@ -350,19 +350,19 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         let first_item_key_prefix = extract_nibble_at_byte_pos(
             rlp[0], first_item_start_offset + first_item_type, 0, pow2_array
         );
-        %{
-            prefix = ids.first_item_key_prefix
-            if prefix == 0:
-                print("First item is an extension node, even number of nibbles")
-            elif prefix == 1:
-                print("First item is an extension node, odd number of nibbles")
-            elif prefix == 2:
-                print("First item is a leaf node, even number of nibbles")
-            elif prefix == 3:
-                print("First item is a leaf node, odd number of nibbles")
-            else:
-                raise Exception(f"Unknown prefix {prefix} for MPT node with 2 items")
-        %}
+        // %{
+        //     prefix = ids.first_item_key_prefix
+        //     if prefix == 0:
+        //         print("First item is an extension node, even number of nibbles")
+        //     elif prefix == 1:
+        //         print("First item is an extension node, odd number of nibbles")
+        //     elif prefix == 2:
+        //         print("First item is a leaf node, even number of nibbles")
+        //     elif prefix == 3:
+        //         print("First item is a leaf node, odd number of nibbles")
+        //     else:
+        //         raise Exception(f"Unknown prefix {prefix} for MPT node with 2 items")
+        // %}
         local odd: felt;
         if (first_item_key_prefix == 0) {
             assert odd = 0;
@@ -381,15 +381,15 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         local pow2_array_f: felt*;
         if (first_item_type != 0) {
             tempvar n_nibbles_in_first_item = 2 * (first_item_len - 1) + odd;
-            %{ print(f"n_nibbles_in_first_item : {ids.n_nibbles_in_first_item}") %}
+            // %{ print(f"n_nibbles_in_first_item : {ids.n_nibbles_in_first_item}") %}
             // Extract the key or key_end. start offset + 1 (item prefix) + 1 (key prefix) - odd (1 if to include prefix's byte in case the nibbles are odd).
             let first_item_value_starts_at_byte = first_item_start_offset + 2 - odd;
-            %{ print(f"\t {ids.first_item_value_starts_at_byte=} \n\t {ids.first_item_start_offset=} \n\t {ids.first_item_type=} \n\t {ids.odd=} \n\t {ids.first_item_len=} \n\t {ids.first_item_type+ids.odd=} \n\t {ids.first_item_start_offset+ids.first_item_type+1-ids.odd=}") %}
+            // %{ print(f"\t {ids.first_item_value_starts_at_byte=} \n\t {ids.first_item_start_offset=} \n\t {ids.first_item_type=} \n\t {ids.odd=} \n\t {ids.first_item_len=} \n\t {ids.first_item_type+ids.odd=} \n\t {ids.first_item_start_offset+ids.first_item_type+1-ids.odd=}") %}
             let (
                 local first_item_value_start_word, local first_item_value_start_offset
             ) = felt_divmod(first_item_value_starts_at_byte, 8);
             let n_bytes_to_extract = first_item_len - 1 + odd;  // - first_item_type + odd;
-            %{ print(f"n_bytes_to_extract : {ids.n_bytes_to_extract}") %}
+            // %{ print(f"n_bytes_to_extract : {ids.n_bytes_to_extract}") %}
             let (
                 extracted_key_subset, extracted_key_subset_len
             ) = extract_n_bytes_from_le_64_chunks_array(
@@ -400,11 +400,11 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 pow2_array,
             );
 
-            %{ print(f"nibbles already checked: {ids.n_nibbles_already_checked}") %}
-            %{
-                if ids.extracted_key_subset_len == 1:
-                    print(f"Extracted key subset : {hex(memory[ids.extracted_key_subset])}")
-            %}
+            // %{
+            //     print(f"nibbles already checked: {ids.n_nibbles_already_checked}")
+            //     if ids.extracted_key_subset_len == 1:
+            //         print(f"Extracted key subset : {hex(memory[ids.extracted_key_subset])}")
+            // %}
             // If the first item is not a single byte, verify subset in key.
             assert_subset_in_key_be(
                 key_subset=extracted_key_subset,
@@ -473,7 +473,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             );
         } else {
             // Extract hash (32 bytes)
-            %{ print(f"Extracting hash in leaf/node case)") %}
+            // %{ print(f"Extracting hash in leaf/node case)") %}
             assert second_item_bytes_len = 32;
             let (local hash_le: Uint256) = extract_le_hash_from_le_64_chunks_array(
                 rlp, second_item_value_starts_word, second_item_value_start_offset, pow2_array
@@ -487,7 +487,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     } else {
         // Node has more than 2 items : it's a branch.
         if (last_node != 0) {
-            %{ print(f"Branch case, last node : yes") %}
+            // %{ print(f"Branch case, last node : yes") %}
 
             // Branch is the last node in the proof. We need to extract the last item (17th).
             // Key should already be fully checked at this point.
@@ -508,7 +508,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
             return (n_nibbles_already_checked, last_item, last_item_bytes_len);
         } else {
-            %{ print(f"Branch case, last node : no") %}
+            // %{ print(f"Branch case, last node : no") %}
             // Branch is not the last node in the proof. We need to extract the hash corresponding to the next nibble of the key.
 
             // Get the next nibble of the key.
@@ -519,14 +519,14 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 n_nibbles_already_checked,
                 pow2_array,
             );
-            %{ print(f"Next Key nibble {ids.next_key_nibble}") %}
+            // %{ print(f"Next Key nibble {ids.next_key_nibble}") %}
             local item_of_interest_start_word: felt;
             local item_of_interest_start_offset: felt;
             local range_check_ptr_f;
             local bitwise_ptr_f: BitwiseBuiltin*;
             if (next_key_nibble == 0) {
                 // Store coordinates of the first item's value.
-                %{ print(f"\t Branch case, key index = 0") %}
+                // %{ print(f"\t Branch case, key index = 0") %}
                 assert item_of_interest_start_word = 0;
                 assert item_of_interest_start_offset = first_item_start_offset + 1;
                 assert range_check_ptr_f = range_check_ptr;
@@ -534,7 +534,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             } else {
                 if (next_key_nibble == 1) {
                     // Store coordinates of the second item's value.
-                    %{ print(f"\t Branch case, key index = 1") %}
+                    // %{ print(f"\t Branch case, key index = 1") %}
                     let (
                         second_item_value_start_word, second_item_value_start_offset
                     ) = felt_divmod_8(second_item_value_starts_at_byte);
@@ -545,7 +545,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 } else {
                     if (next_key_nibble == 2) {
                         // Store coordinates of the third item's value.
-                        %{ print(f"\t Branch case, key index = 2") %}
+                        // %{ print(f"\t Branch case, key index = 2") %}
                         let (
                             third_item_value_start_word, third_item_value_start_offset
                         ) = felt_divmod_8(third_item_starts_at_byte + 1);
@@ -555,7 +555,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                         assert bitwise_ptr_f = bitwise_ptr;
                     } else {
                         // Store coordinates of the item's value at index next_key_nibble != (0, 1, 2).
-                        %{ print(f"\t Branch case, key index {ids.next_key_nibble}") %}
+                        // %{ print(f"\t Branch case, key index {ids.next_key_nibble}") %}
                         let (third_item_start_word, third_item_start_offset) = felt_divmod(
                             third_item_starts_at_byte, 8
                         );
