@@ -37,3 +37,5 @@ jobs:
       env:
         RPC_URL_MAINNET: ${{ secrets.RPC_URL_MAINNET }}
       run: source ./tools/make/cairo_tests.sh
+    - name: Run MPT tests
+      run: source ./tools/make/fuzzer.sh tests/fuzzing/mpt.cairo --ci

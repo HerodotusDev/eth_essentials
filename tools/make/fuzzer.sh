@@ -3,6 +3,17 @@
 # Activate virtual environment
 source venv/bin/activate
 
+# Define a boolean argument
+IS_CI_RUN=false
+
+for arg in "$@"
+do
+    if [ "$arg" == "--ci" ]
+    then
+        IS_CI_RUN=true
+    fi
+done
+
 # Get the Cairo file from the command line argument
 cairo_file="$1"
 filename=$(basename "$cairo_file" .cairo)
@@ -53,6 +64,20 @@ cairo-compile --cairo_path="packages/eth_essentials" "$cairo_file" --output "bui
 # cairo-run --program="build/compiled_cairo_files/$filename.json" --program_input=tests/fuzzing/fixtures/mpt_proofs_5.json --layout=starknet_with_keccak
 # Use --halt now,fail=1 to return non-zero if any task fails
 find ./tests/fuzzing/fixtures -name "*.json" | parallel --halt now,fail=1 process_input $filename
+
+# Clone the repository if the directory doesn't exist
+if [ ! -d "mpt-fixtures" ]; then
+    git clone https://github.com/HerodotusDev/mpt-fixtures
+fi
+
+echo "Starting tests..."
+if $IS_CI_RUN; then
+    # Run the tests in parallel
+    find ./mpt-fixtures/fixtures/resolved -name "*.json" | parallel --halt soon,fail=1 process_input $filename
+else
+    # Run the tests in parallel
+    find ./mpt-fixtures/fixtures/autogen -name "*.json" | parallel process_input $filename
+fi
 
 # Capture the exit status of parallel
 exit_status=$?

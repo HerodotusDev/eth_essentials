@@ -18,6 +18,9 @@ echo "Run Python Format Check..."
 echo "Run Cairo Tests..."
 (source ./tools/make/cairo_tests.sh)
 
+echo "Run MPT Tests..."
+(source ./tools/make/fuzzer.sh tests/fuzzing/mpt.cairo --ci)
+
 # End time
 end_time=$SECONDS
 
