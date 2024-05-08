@@ -75,13 +75,10 @@ func main{
     %}
 
     let (pow2_array: felt*) = pow2alloc127();
-    let (keys_little: Uint256*) = alloc();
+    let (keys_be: Uint256*) = alloc();
 
     hash_n_addresses(
-        addresses_64_little=addresses_64_little,
-        keys_little=keys_little,
-        n_addresses=n_proofs,
-        index=0,
+        addresses_64_little=addresses_64_little, keys_be=keys_be, n_addresses=n_proofs, index=0
     );
 
     let (values: felt**) = alloc();
@@ -91,7 +88,7 @@ func main{
         mpt_proofs=account_proofs,
         mpt_proofs_bytes_len=account_proofs_bytes_len,
         mpt_proofs_len=account_proofs_len,
-        keys_little=keys_little,
+        keys_be=keys_be,
         hashes_to_assert=state_roots,
         n_proofs=n_proofs,
         index=0,
@@ -104,19 +101,20 @@ func main{
 }
 
 func hash_n_addresses{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*}(
-    addresses_64_little: felt**, keys_little: Uint256*, n_addresses: felt, index: felt
+    addresses_64_little: felt**, keys_be: Uint256*, n_addresses: felt, index: felt
 ) {
     alloc_locals;
     if (index == n_addresses) {
         return ();
     } else {
-        let (hash: Uint256) = keccak(addresses_64_little[index], 20);
-        assert keys_little[index].low = hash.low;
-        assert keys_little[index].high = hash.high;
+        let (hash_le: Uint256) = keccak(addresses_64_little[index], 20);
+        let (hash: Uint256) = uint256_reverse_endian(hash_le);
+        assert keys_be[index].low = hash.low;
+        assert keys_be[index].high = hash.high;
 
         return hash_n_addresses(
             addresses_64_little=addresses_64_little,
-            keys_little=keys_little,
+            keys_be=keys_be,
             n_addresses=n_addresses,
             index=index + 1,
         );
@@ -127,7 +125,7 @@ func verify_n_mpt_proofs{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_p
     mpt_proofs: felt***,
     mpt_proofs_bytes_len: felt**,
     mpt_proofs_len: felt*,
-    keys_little: Uint256*,
+    keys_be: Uint256*,
     hashes_to_assert: Uint256*,
     n_proofs: felt,
     index: felt,
@@ -139,14 +137,19 @@ func verify_n_mpt_proofs{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_p
     if (index == n_proofs) {
         return (values=values, values_lens=values_lens);
     } else {
+        local key_be_leading_zeroes_nibbles;
+        let key_be: Uint256 = keys_be[index];
+        %{
+            from tools.py.utils import count_leading_zero_nibbles_from_hex
+            ids.key_be_leading_zeroes_nibbles = count_leading_zero_nibbles_from_hex(hex(ids.key_be.low+2**128*ids.key_be.high))
+        %}
         let (value: felt*, value_len: felt) = verify_mpt_proof(
             mpt_proof=mpt_proofs[index],
             mpt_proof_bytes_len=mpt_proofs_bytes_len[index],
             mpt_proof_len=mpt_proofs_len[index],
-            key_little=keys_little[index],
-            n_nibbles_already_checked=0,
-            node_index=0,
-            hash_to_assert=hashes_to_assert[index],
+            key_be=key_be,
+            key_be_leading_zeroes_nibbles=key_be_leading_zeroes_nibbles,
+            root=hashes_to_assert[index],
             pow2_array=pow2_array,
         );
         assert values_lens[index] = value_len;
@@ -155,7 +158,7 @@ func verify_n_mpt_proofs{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_p
             mpt_proofs=mpt_proofs,
             mpt_proofs_bytes_len=mpt_proofs_bytes_len,
             mpt_proofs_len=mpt_proofs_len,
-            keys_little=keys_little,
+            keys_be=keys_be,
             hashes_to_assert=hashes_to_assert,
             n_proofs=n_proofs,
             index=index + 1,

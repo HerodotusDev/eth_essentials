@@ -19,7 +19,8 @@ out/
 .env
 .encryptedKey
 broadcast/
-
+*.idea
+tests/rust/target
 node_modules
 package-lock.json
 
@@ -27,3 +28,6 @@ package-lock.json
 src/.DS_Store
 
 solidity-verifier/lib/*
+*.log
+
+!tests/fuzzing/fixtures/*.json

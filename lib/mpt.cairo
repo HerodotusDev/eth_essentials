@@ -8,20 +8,28 @@ from lib.rlp_little import (
     extract_nibble_at_byte_pos,
     extract_n_bytes_from_le_64_chunks_array,
     extract_le_hash_from_le_64_chunks_array,
-    assert_subset_in_key,
-    extract_nibble_from_key,
+    assert_subset_in_key_be,
+    extract_nibble_from_key_be,
+    n_nibbles_in_key,
 )
-from lib.utils import felt_divmod, felt_divmod_8, word_reverse_endian_64, get_felt_bitlength_128
+from lib.utils import (
+    felt_divmod,
+    felt_divmod_8,
+    word_reverse_endian_64,
+    get_felt_bitlength_128,
+    uint256_reverse_endian_no_padding,
+    get_uint256_bit_length,
+    n_bits_to_n_nibbles,
+)
 
 // Verify a Merkle Patricia Tree proof.
 // params:
 // - mpt_proof: the proof to verify as an array of nodes, each node being an array of little endian 8 bytes chunks.
 // - mpt_proof_bytes_len: array of the length in bytes of each node
 // - mpt_proof_len: number of nodes in the proof
-// - key_little: the key to verify as a little endian bytes Uint256
-// - n_nibbles_already_checked:  the number of nibbles already checked in the key. Should start with 0.
-// - node_index: the index of the next node to verify. Should start with 0.
-// - hash_to_assert: the current hash to assert for the current node. Should start with the root of the MPT.
+// - key_be: the key to verify as a big endian Uint256 number.
+// - key_be_leading_zeroes_nibbles: the number of leading zeroes nibbles in the key. If the key is 0x007, then 3.
+// - root: the root of the MPT as a little endian Uint256 number.
 // - pow2_array: array of powers of 2.
 // returns:
 // - the value of the proof as a felt* array of little endian 8 bytes chunks.
@@ -30,7 +38,52 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
     mpt_proof: felt**,
     mpt_proof_bytes_len: felt*,
     mpt_proof_len: felt,
-    key_little: Uint256,
+    key_be: Uint256,
+    key_be_leading_zeroes_nibbles: felt,
+    root: Uint256,
+    pow2_array: felt*,
+) -> (value: felt*, value_len: felt) {
+    // %{ print(f"Veryfing key 0x{'0'*ids.key_be_leading_zeroes_nibbles}{hex(ids.key_be.low+2**128*ids.key_be.high)[2:]}") %}
+    // Verify the key is a valid Uint256 number.
+    assert [range_check_ptr] = key_be.low;
+    assert [range_check_ptr + 1] = key_be.high;
+    // Verify the number of leading zeroes nibbles in the key is valid.
+    assert [range_check_ptr + 2] = key_be_leading_zeroes_nibbles;
+    tempvar range_check_ptr = range_check_ptr + 3;
+    // Count the number of nibbles in the key (excluding leading zeroes).
+    let (num_nibbles_in_key_without_leading_zeroes) = n_nibbles_in_key(key_be, pow2_array);
+    let num_nibbles_in_key = num_nibbles_in_key_without_leading_zeroes +
+        key_be_leading_zeroes_nibbles;
+    // %{ print(f"num_nibbles_in_key: {ids.num_nibbles_in_key}, key_be_leading_zeroes_nibbles: {ids.key_be_leading_zeroes_nibbles}") %}
+    // Verify the total number of nibbles in the key is in the range [0, 64].
+    assert [range_check_ptr] = 64 - num_nibbles_in_key;
+    tempvar range_check_ptr = range_check_ptr + 1;
+
+    return verify_mpt_proof_inner(
+        mpt_proof=mpt_proof,
+        mpt_proof_bytes_len=mpt_proof_bytes_len,
+        mpt_proof_len=mpt_proof_len,
+        key_be=key_be,
+        key_be_nibbles=num_nibbles_in_key_without_leading_zeroes,
+        key_be_leading_zeroes_nibbles=key_be_leading_zeroes_nibbles,
+        n_nibbles_already_checked=0,
+        node_index=0,
+        hash_to_assert=root,
+        pow2_array=pow2_array,
+    );
+}
+
+// Inner function for verify_mpt_proof.
+// Should not be called directly.
+func verify_mpt_proof_inner{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*
+}(
+    mpt_proof: felt**,
+    mpt_proof_bytes_len: felt*,
+    mpt_proof_len: felt,
+    key_be: Uint256,
+    key_be_nibbles: felt,
+    key_be_leading_zeroes_nibbles: felt,
     n_nibbles_already_checked: felt,
     node_index: felt,
     hash_to_assert: Uint256,
@@ -42,10 +95,10 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
         // Last node : item of interest is the value.
         // Check that the hash of the last node is the expected one.
         // Check that the final accumulated key is the expected one.
-        // Check the number of bytes in the key is equal to the number of bytes checked in the key.
+        // Check the total number of nibbles in the key is equal to the number of nibbles checked in the key.
         let (node_hash: Uint256) = keccak(mpt_proof[node_index], mpt_proof_bytes_len[node_index]);
-        %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
-        %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
+        // %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
+        // %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
         assert node_hash.low - hash_to_assert.low = 0;
         assert node_hash.high - hash_to_assert.high = 0;
 
@@ -54,65 +107,41 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
             bytes_len=mpt_proof_bytes_len[node_index],
             pow2_array=pow2_array,
             last_node=1,
-            key_little=key_little,
+            key_be=key_be,
+            key_be_nibbles=key_be_nibbles,
+            key_be_leading_zeroes_nibbles=key_be_leading_zeroes_nibbles,
             n_nibbles_already_checked=n_nibbles_already_checked,
         );
-        local key_bits;
-        with pow2_array {
-            if (key_little.high != 0) {
-                let key_bit_high = get_felt_bitlength_128(key_little.high);
-                assert key_bits = 128 + key_bit_high;
-            } else {
-                let key_bit_low = get_felt_bitlength_128(key_little.low);
-                assert key_bits = key_bit_low;
-            }
-        }
-        local n_bytes_in_key;
-        let (n_bytes_in_key_tmp, rem) = felt_divmod_8(key_bits);
-
-        if (n_bytes_in_key_tmp == 0) {
-            assert n_bytes_in_key = 1;
-        } else {
-            if (rem != 0) {
-                assert n_bytes_in_key = n_bytes_in_key_tmp + 1;
-            } else {
-                assert n_bytes_in_key = n_bytes_in_key_tmp;
-            }
-        }
-
-        local n_bytes_checked;
-        let (n_bytes_checked_tmp, rem) = felt_divmod(n_nibbles_checked, 2);
-        if (rem != 0) {
-            assert n_bytes_checked = n_bytes_checked_tmp + 1;
-        } else {
-            assert n_bytes_checked = n_bytes_checked_tmp;
-        }
-        assert n_bytes_in_key = n_bytes_checked;
+        assert key_be_leading_zeroes_nibbles + key_be_nibbles = n_nibbles_checked;
         return (item_of_interest, item_of_interest_len);
     } else {
         // Not last node : item of interest is the hash of the next node.
         // Check that the hash of the current node is the expected one.
 
         let (node_hash: Uint256) = keccak(mpt_proof[node_index], mpt_proof_bytes_len[node_index]);
-        %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
-        %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
+        // %{ print(f"node_hash : {hex(ids.node_hash.low + 2**128*ids.node_hash.high)}") %}
+        // %{ print(f"hash_to_assert : {hex(ids.hash_to_assert.low + 2**128*ids.hash_to_assert.high)}") %}
         assert node_hash.low - hash_to_assert.low = 0;
         assert node_hash.high - hash_to_assert.high = 0;
-        %{ print(f"\t Hash assert for node {ids.node_index} passed.") %}
+        // %{ print(f"\t Hash assert for node {ids.node_index} passed.") %}
         let (n_nibbles_checked, item_of_interest, item_of_interest_len) = decode_node_list_lazy(
             rlp=mpt_proof[node_index],
             bytes_len=mpt_proof_bytes_len[node_index],
             pow2_array=pow2_array,
             last_node=0,
-            key_little=key_little,
+            key_be=key_be,
+            key_be_nibbles=key_be_nibbles,
+            key_be_leading_zeroes_nibbles=key_be_leading_zeroes_nibbles,
             n_nibbles_already_checked=n_nibbles_already_checked,
         );
 
-        return verify_mpt_proof(
+        return verify_mpt_proof_inner(
             mpt_proof=mpt_proof,
             mpt_proof_bytes_len=mpt_proof_bytes_len,
             mpt_proof_len=mpt_proof_len,
-            key_little=key_little,
+            key_be=key_be,
+            key_be_nibbles=key_be_nibbles,
+            key_be_leading_zeroes_nibbles=key_be_leading_zeroes_nibbles,
             n_nibbles_already_checked=n_nibbles_checked,
             node_index=node_index + 1,
             hash_to_assert=[cast(item_of_interest, Uint256*)],
@@ -127,7 +156,9 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     bytes_len: felt,
     pow2_array: felt*,
     last_node: felt,
-    key_little: Uint256,
+    key_be: Uint256,
+    key_be_nibbles: felt,
+    key_be_leading_zeroes_nibbles: felt,
     n_nibbles_already_checked: felt,
 ) -> (n_nibbles_already_checked: felt, item_of_interest: felt*, item_of_interest_len: felt) {
     alloc_locals;
@@ -138,10 +169,10 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     %{
         if 0xc0 <= ids.list_prefix <= 0xf7:
             ids.long_short_list = 0
-            print("List type : short")
+            #print("List type : short")
         elif 0xf8 <= ids.list_prefix <= 0xff:
             ids.long_short_list = 1
-            print("List type: long")
+            #print("List type: long")
         else:
             print("Not a list.")
     %}
@@ -196,6 +227,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         tempvar range_check_ptr = range_check_ptr + 5;
     } else {
         // Single byte
+        // %{ print(f"First item is single byte, computing second item") %}
         assert [range_check_ptr + 3] = 0x7f - first_item_prefix;
         assert first_item_len = 1;
         assert second_item_starts_at_byte = first_item_start_offset + first_item_len;
@@ -218,13 +250,13 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     %{
         if 0x00 <= ids.second_item_prefix <= 0x7f:
             ids.second_item_type = 0
-            print(f"2nd item : single byte")
+            #print(f"2nd item : single byte")
         elif 0x80 <= ids.second_item_prefix <= 0xb7:
             ids.second_item_type = 1
-            print(f"2nd item : short string {ids.second_item_prefix - 0x80} bytes")
+            #print(f"2nd item : short string {ids.second_item_prefix - 0x80} bytes")
         elif 0xb8 <= ids.second_item_prefix <= 0xbf:
             ids.second_item_type = 2
-            print(f"2nd item : long string (len_len {ids.second_item_prefix - 0xb7} bytes)")
+            #print(f"2nd item : long string (len_len {ids.second_item_prefix - 0xb7} bytes)")
         else:
             print(f"2nd item : unknown type {ids.second_item_prefix}")
     %}
@@ -292,7 +324,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 tempvar range_check_ptr = range_check_ptr;
             }
 
-            %{ print(f"second_item_long_string_len : {ids.second_item_bytes_len} bytes") %}
+            // %{ print(f"second_item_long_string_len : {ids.second_item_bytes_len} bytes") %}
             assert third_item_starts_at_byte = second_item_starts_at_byte + 1 + len_len +
                 second_item_bytes_len;
             assert range_check_ptr_f = range_check_ptr;
@@ -305,7 +337,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     // %{ print(f"third item starts at byte {ids.third_item_starts_at_byte}") %}
 
     if (third_item_starts_at_byte == bytes_len) {
-        %{ print("two items => Leaf/Extension case") %}
+        // %{ print("two items => Leaf/Extension case") %}
 
         // Node's list has only 2 items : it's a leaf or an extension.
         // Regardless, we need to decode the first item (key or key_end) and the second item (hash or value).
@@ -318,19 +350,19 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         let first_item_key_prefix = extract_nibble_at_byte_pos(
             rlp[0], first_item_start_offset + first_item_type, 0, pow2_array
         );
-        %{
-            prefix = ids.first_item_key_prefix
-            if prefix == 0:
-                print("First item is an extension node, even number of nibbles")
-            elif prefix == 1:
-                print("First item is an extension node, odd number of nibbles")
-            elif prefix == 2:
-                print("First item is a leaf node, even number of nibbles")
-            elif prefix == 3:
-                print("First item is a leaf node, odd number of nibbles")
-            else:
-                raise Exception(f"Unknown prefix {prefix} for MPT node with 2 items")
-        %}
+        // %{
+        //     prefix = ids.first_item_key_prefix
+        //     if prefix == 0:
+        //         print("First item is an extension node, even number of nibbles")
+        //     elif prefix == 1:
+        //         print("First item is an extension node, odd number of nibbles")
+        //     elif prefix == 2:
+        //         print("First item is a leaf node, even number of nibbles")
+        //     elif prefix == 3:
+        //         print("First item is a leaf node, odd number of nibbles")
+        //     else:
+        //         raise Exception(f"Unknown prefix {prefix} for MPT node with 2 items")
+        // %}
         local odd: felt;
         if (first_item_key_prefix == 0) {
             assert odd = 0;
@@ -342,49 +374,65 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 assert odd = 1;
             }
         }
-        tempvar n_nibbles_in_first_item = 2 * first_item_len - odd;
-        %{ print(f"n_nibbles_in_first_item : {ids.n_nibbles_in_first_item}") %}
-        // Extract the key or key_end.
-        let (local first_item_value_start_word, local first_item_value_start_offset) = felt_divmod(
-            first_item_start_offset + first_item_type + 1 - odd, 8
-        );
-        let (
-            extracted_key_subset, extracted_key_subset_len
-        ) = extract_n_bytes_from_le_64_chunks_array(
-            rlp,
-            first_item_value_start_word,
-            first_item_value_start_offset,
-            first_item_len - first_item_type + odd,
-            pow2_array,
-        );
-        %{ print(f"nibbles already checked: {ids.n_nibbles_already_checked}") %}
 
         local range_check_ptr_f;
         local bitwise_ptr_f: BitwiseBuiltin*;
         local n_nibbles_already_checked_f;
         local pow2_array_f: felt*;
         if (first_item_type != 0) {
+            tempvar n_nibbles_in_first_item = 2 * (first_item_len - 1) + odd;
+            // %{ print(f"n_nibbles_in_first_item : {ids.n_nibbles_in_first_item}") %}
+            // Extract the key or key_end. start offset + 1 (item prefix) + 1 (key prefix) - odd (1 if to include prefix's byte in case the nibbles are odd).
+            let first_item_value_starts_at_byte = first_item_start_offset + 2 - odd;
+            // %{ print(f"\t {ids.first_item_value_starts_at_byte=} \n\t {ids.first_item_start_offset=} \n\t {ids.first_item_type=} \n\t {ids.odd=} \n\t {ids.first_item_len=} \n\t {ids.first_item_type+ids.odd=} \n\t {ids.first_item_start_offset+ids.first_item_type+1-ids.odd=}") %}
+            let (
+                local first_item_value_start_word, local first_item_value_start_offset
+            ) = felt_divmod(first_item_value_starts_at_byte, 8);
+            let n_bytes_to_extract = first_item_len - 1 + odd;  // - first_item_type + odd;
+            // %{ print(f"n_bytes_to_extract : {ids.n_bytes_to_extract}") %}
+            let (
+                extracted_key_subset, extracted_key_subset_len
+            ) = extract_n_bytes_from_le_64_chunks_array(
+                rlp,
+                first_item_value_start_word,
+                first_item_value_start_offset,
+                n_bytes_to_extract,
+                pow2_array,
+            );
+
+            // %{
+            //     print(f"nibbles already checked: {ids.n_nibbles_already_checked}")
+            //     if ids.extracted_key_subset_len == 1:
+            //         print(f"Extracted key subset : {hex(memory[ids.extracted_key_subset])}")
+            // %}
             // If the first item is not a single byte, verify subset in key.
-            let (n_nibbles_asserted) = assert_subset_in_key(
+            assert_subset_in_key_be(
                 key_subset=extracted_key_subset,
                 key_subset_len=extracted_key_subset_len,
                 key_subset_nibble_len=n_nibbles_in_first_item,
-                key_little=key_little,
+                key_be=key_be,
+                key_be_nibbles=key_be_nibbles,
+                key_be_leading_zeroes_nibbles=key_be_leading_zeroes_nibbles,
                 n_nibbles_already_checked=n_nibbles_already_checked,
                 cut_nibble=odd,
                 pow2_array=pow2_array,
             );
             assert range_check_ptr_f = range_check_ptr;
             assert bitwise_ptr_f = bitwise_ptr;
-            assert n_nibbles_already_checked_f = n_nibbles_already_checked + n_nibbles_asserted;
+            assert n_nibbles_already_checked_f = n_nibbles_already_checked +
+                n_nibbles_in_first_item;
             assert pow2_array_f = pow2_array;
         } else {
             // if the first item is a single byte
 
             if (odd != 0) {
                 // If the first item has an odd number of nibbles, since there are two nibbles in one byte, the second nibble needs to be checked
-                let key_nibble = extract_nibble_from_key(
-                    key_little, n_nibbles_already_checked, pow2_array
+                let key_nibble = extract_nibble_from_key_be(
+                    key_be,
+                    key_be_nibbles,
+                    key_be_leading_zeroes_nibbles,
+                    n_nibbles_already_checked,
+                    pow2_array,
                 );
                 let (_, first_item_nibble) = felt_divmod(first_item_prefix, 2 ** 4);
                 assert key_nibble = first_item_nibble;
@@ -406,14 +454,17 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         let n_nibbles_already_checked = n_nibbles_already_checked_f;
 
         // Extract the hash or value.
-
+        let (second_item_value_starts_word, second_item_value_start_offset) = felt_divmod(
+            second_item_value_starts_at_byte, 8
+        );
         if (last_node != 0) {
             // Extract value
-            let (value_starts_word, value_start_offset) = felt_divmod(
-                second_item_value_starts_at_byte, 8
-            );
             let (value, value_len) = extract_n_bytes_from_le_64_chunks_array(
-                rlp, value_starts_word, value_start_offset, second_item_bytes_len, pow2_array
+                rlp,
+                second_item_value_starts_word,
+                second_item_value_start_offset,
+                second_item_bytes_len,
+                pow2_array,
             );
             return (
                 n_nibbles_already_checked=n_nibbles_already_checked,
@@ -422,9 +473,10 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             );
         } else {
             // Extract hash (32 bytes)
+            // %{ print(f"Extracting hash in leaf/node case)") %}
             assert second_item_bytes_len = 32;
             let (local hash_le: Uint256) = extract_le_hash_from_le_64_chunks_array(
-                rlp, second_item_starts_at_word, second_item_start_offset, pow2_array
+                rlp, second_item_value_starts_word, second_item_value_start_offset, pow2_array
             );
             return (
                 n_nibbles_already_checked=n_nibbles_already_checked,
@@ -435,7 +487,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     } else {
         // Node has more than 2 items : it's a branch.
         if (last_node != 0) {
-            %{ print(f"Branch case, last node : yes") %}
+            // %{ print(f"Branch case, last node : yes") %}
 
             // Branch is the last node in the proof. We need to extract the last item (17th).
             // Key should already be fully checked at this point.
@@ -456,21 +508,25 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
             return (n_nibbles_already_checked, last_item, last_item_bytes_len);
         } else {
-            %{ print(f"Branch case, last node : no") %}
+            // %{ print(f"Branch case, last node : no") %}
             // Branch is not the last node in the proof. We need to extract the hash corresponding to the next nibble of the key.
 
             // Get the next nibble of the key.
-            let next_key_nibble = extract_nibble_from_key(
-                key_little, n_nibbles_already_checked, pow2_array
+            let next_key_nibble = extract_nibble_from_key_be(
+                key_be,
+                key_be_nibbles,
+                key_be_leading_zeroes_nibbles,
+                n_nibbles_already_checked,
+                pow2_array,
             );
-            %{ print(f"Next Key nibble {ids.next_key_nibble}") %}
+            // %{ print(f"Next Key nibble {ids.next_key_nibble}") %}
             local item_of_interest_start_word: felt;
             local item_of_interest_start_offset: felt;
             local range_check_ptr_f;
             local bitwise_ptr_f: BitwiseBuiltin*;
             if (next_key_nibble == 0) {
                 // Store coordinates of the first item's value.
-                %{ print(f"\t Branch case, key index = 0") %}
+                // %{ print(f"\t Branch case, key index = 0") %}
                 assert item_of_interest_start_word = 0;
                 assert item_of_interest_start_offset = first_item_start_offset + 1;
                 assert range_check_ptr_f = range_check_ptr;
@@ -478,7 +534,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             } else {
                 if (next_key_nibble == 1) {
                     // Store coordinates of the second item's value.
-                    %{ print(f"\t Branch case, key index = 1") %}
+                    // %{ print(f"\t Branch case, key index = 1") %}
                     let (
                         second_item_value_start_word, second_item_value_start_offset
                     ) = felt_divmod_8(second_item_value_starts_at_byte);
@@ -489,7 +545,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 } else {
                     if (next_key_nibble == 2) {
                         // Store coordinates of the third item's value.
-                        %{ print(f"\t Branch case, key index = 2") %}
+                        // %{ print(f"\t Branch case, key index = 2") %}
                         let (
                             third_item_value_start_word, third_item_value_start_offset
                         ) = felt_divmod_8(third_item_starts_at_byte + 1);
@@ -499,7 +555,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                         assert bitwise_ptr_f = bitwise_ptr;
                     } else {
                         // Store coordinates of the item's value at index next_key_nibble != (0, 1, 2).
-                        %{ print(f"\t Branch case, key index {ids.next_key_nibble}") %}
+                        // %{ print(f"\t Branch case, key index {ids.next_key_nibble}") %}
                         let (third_item_start_word, third_item_start_offset) = felt_divmod(
                             third_item_starts_at_byte, 8
                         );
