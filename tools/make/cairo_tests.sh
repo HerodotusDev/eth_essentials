@@ -27,7 +27,7 @@ source venv/bin/activate
 # Export the function so it's available in subshells
 export -f run_tests
 
-# Find all .cairo files under src/ and tests/ directories and format them in parallel
+# Find all .cairo files under tests/cairo_programs and run them in parallel
 # Using --halt soon,fail=1 to stop at the first failure
 find ./tests/cairo_programs -name '*.cairo' | parallel --halt soon,fail=1 run_tests
 

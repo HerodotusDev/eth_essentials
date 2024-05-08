@@ -9,6 +9,9 @@ from tools.py.mmr import is_valid_mmr_size
 
 def split_128(a):
     """Takes in value, returns uint256-ish tuple."""
+    assert (
+        0 <= a.bit_length() <= 256
+    ), f"split_128 input exceeds maximum bit length of 256, got {a.bit_length()}"
     return (a & ((1 << 128) - 1), a >> 128)
 
 
@@ -19,6 +22,17 @@ def from_uint256(a):
 
 def reverse_endian_256(x: int):
     return int.from_bytes(x.to_bytes(32, "big"), "little")
+
+
+def parse_int_to_bytes(x: int) -> bytes:
+    """
+    Convert an integer to a bytes object.
+    If the number of bytes is odd, left pad with one leading zero.
+    """
+    hex_str = hex(x)[2:]
+    if len(hex_str) % 2 == 1:
+        hex_str = "0" + hex_str
+    return bytes.fromhex(hex_str)
 
 
 def count_trailing_zero_bytes_from_int(number: int) -> int:

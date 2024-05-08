@@ -44,6 +44,8 @@ func verify_n_mpt_proofs{
     local key: Uint256;
     local key_leading_zeroes: felt;
     local root: Uint256;
+    local expected_hash: Uint256;
+    local expected_bytes_len: felt;
 
     %{
         from tools.py.utils import bytes_to_8_bytes_chunks_little, split_128, reverse_endian_256, count_leading_zero_nibbles_from_hex
@@ -79,9 +81,16 @@ func verify_n_mpt_proofs{
         (key_low, key_high) = split_128(int(batch["key"], 16))
         ids.key.low = key_low
         ids.key.high = key_high
+
+        reversed_hash = reverse_endian_256(int(batch["value_hash"], 16))
+        (hash_low, hash_high) = split_128(reversed_hash)
+        ids.expected_hash.low = hash_low
+        ids.expected_hash.high = hash_high
+
+        ids.expected_bytes_len = batch["value_len"]
     %}
 
-    let (_, _) = verify_mpt_proof(
+    let (result, result_bytes_len) = verify_mpt_proof(
         mpt_proof=proof,
         mpt_proof_bytes_len=proof_bytes_len,
         mpt_proof_len=proof_len,
@@ -90,6 +99,12 @@ func verify_n_mpt_proofs{
         root=root,
         pow2_array=pow2_array,
     );
+
+    assert result_bytes_len = expected_bytes_len;
+
+    let (local value_hash) = keccak(result, result_bytes_len);
+    assert expected_hash.low = value_hash.low;
+    assert expected_hash.high = value_hash.high;
 
     return verify_n_mpt_proofs(batch_len, index + 1);
 }
