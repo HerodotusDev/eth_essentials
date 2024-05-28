@@ -90,7 +90,7 @@ func verify_mpt_proof_inner{
     pow2_array: felt*,
 ) -> (value: felt*, value_len: felt) {
     alloc_locals;
-    %{ print(f"\n\nNode index {ids.node_index+1}/{ids.mpt_proof_len} \n \t {ids.n_nibbles_already_checked=}") %}
+    // %{ print(f"\n\nNode index {ids.node_index+1}/{ids.mpt_proof_len} \n \t {ids.n_nibbles_already_checked=}") %}
     if (node_index == mpt_proof_len - 1) {
         // Last node : item of interest is the value.
         // Check that the hash of the last node is the expected one.
