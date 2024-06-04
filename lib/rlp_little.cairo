@@ -244,7 +244,7 @@ func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     n_nibbles_already_checked: felt,
     cut_nibble: felt,
     pow2_array: felt*,
-) {
+) -> felt {
     alloc_locals;
 
     // Get the little endian 256 bit number from the extracted 64 bit le words array :
@@ -373,9 +373,16 @@ func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     // %{ print(f"Key subset final: {hex(ids.key_subset_be_final.low + ids.key_subset_be_final.high*2**128)}") %}
 
     // %{ print(f"key subset expect: {hex(ids.key_shifted.low + ids.key_shifted.high*2**128)}") %}
-    assert key_subset_be_final.low = key_shifted.low;
-    assert key_subset_be_final.high = key_shifted.high;
-    return ();
+    if(key_subset_be_final.low == key_shifted.low) {
+        if(key_subset_be_final.high == key_shifted.high) {
+            return 1;
+        } else {
+            return 0;
+        }
+    
+    } else {
+        return 0;
+    }
 }
 
 // From a 256 bit key in big endian of the form :

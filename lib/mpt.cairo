@@ -1,6 +1,7 @@
 from starkware.cairo.common.uint256 import Uint256, uint256_reverse_endian
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, KeccakBuiltin
 from starkware.cairo.common.builtin_keccak.keccak import keccak
+from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.registers import get_fp_and_pc
 from lib.rlp_little import (
     extract_byte_at_pos,
@@ -400,13 +401,8 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 pow2_array,
             );
 
-            // %{
-            //     print(f"nibbles already checked: {ids.n_nibbles_already_checked}")
-            //     if ids.extracted_key_subset_len == 1:
-            //         print(f"Extracted key subset : {hex(memory[ids.extracted_key_subset])}")
-            // %}
-            // If the first item is not a single byte, verify subset in key.
-            assert_subset_in_key_be(
+            // Check if the key is contained in the leaf/extension node.
+            let contains_subkey = assert_subset_in_key_be(
                 key_subset=extracted_key_subset,
                 key_subset_len=extracted_key_subset_len,
                 key_subset_nibble_len=n_nibbles_in_first_item,
@@ -422,6 +418,14 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             assert n_nibbles_already_checked_f = n_nibbles_already_checked +
                 n_nibbles_in_first_item;
             assert pow2_array_f = pow2_array;
+
+            // Maybe we need to enfore that this doesnt pass for extension nodes?
+            if(contains_subkey != 1) {
+                // Key does not match, we have a non-inclusion. Return empty value.
+                let (res) = alloc();
+                return (n_nibbles_already_checked_f, res, 0);
+            }
+
         } else {
             // if the first item is a single byte
 
@@ -497,11 +501,17 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             let (
                 last_item_start_word, last_item_start_offset
             ) = jump_branch_node_till_element_at_index(
-                rlp, 0, 16, third_item_start_word, third_item_start_offset, pow2_array
-            );
+                rlp, 1, 16, third_item_start_word, third_item_start_offset, pow2_array
+            ); // we start jumping of the 2nd item (index 1) to the 17th item (index 16)
             tempvar last_item_bytes_len = bytes_len - (
                 last_item_start_word * 8 + last_item_start_offset
             );
+
+            if(last_item_bytes_len == 0) {
+                let (res) = alloc();
+                // ensure we dont ignore the nibble check if the proof has more then one node
+                return (n_nibbles_already_checked + key_be_nibbles + key_be_leading_zeroes_nibbles, res, 0);
+            }
             let (last_item: felt*, last_item_len: felt) = extract_n_bytes_from_le_64_chunks_array(
                 rlp, last_item_start_word, last_item_start_offset, last_item_bytes_len, pow2_array
             );
