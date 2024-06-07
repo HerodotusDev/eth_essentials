@@ -93,7 +93,7 @@ func verify_mpt_proof_inner{
     pow2_array: felt*,
 ) -> (value: felt*, value_len: felt) {
     alloc_locals;
-    %{ print(f"\n\nNode index {ids.node_index+1}/{ids.mpt_proof_len} \n \t {ids.n_nibbles_already_checked=}") %}
+    // %{ print(f"\n\nNode index {ids.node_index+1}/{ids.mpt_proof_len} \n \t {ids.n_nibbles_already_checked=}") %}
     if (node_index == mpt_proof_len - 1) {
         // Last node : item of interest is the value.
         // Check that the hash of the last node is the expected one.
@@ -473,18 +473,33 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             let (second_item_value_starts_word, second_item_value_start_offset) = felt_divmod(
                 second_item_value_starts_at_byte, 8
             );
-            let (value, value_len) = extract_n_bytes_from_le_64_chunks_array(
-                rlp,
-                second_item_value_starts_word,
-                second_item_value_start_offset,
-                second_item_bytes_len,
-                pow2_array,
-            );
-            return (
-                n_nibbles_already_checked=n_nibbles_already_checked,
-                item_of_interest=value,
-                item_of_interest_len=second_item_bytes_len,
-            );
+            if (last_node != 0) {
+                // Extract value
+                let (value, value_len) = extract_n_bytes_from_le_64_chunks_array(
+                    rlp,
+                    second_item_value_starts_word,
+                    second_item_value_start_offset,
+                    second_item_bytes_len,
+                    pow2_array,
+                );
+                return (
+                    n_nibbles_already_checked=n_nibbles_already_checked,
+                    item_of_interest=value,
+                    item_of_interest_len=second_item_bytes_len,
+                );
+            } else {
+                // Extract hash (32 bytes)
+                // %{ print(f"Extracting hash in leaf/node case)") %}
+                assert second_item_bytes_len = 32;
+                let (local hash_le: Uint256) = extract_le_hash_from_le_64_chunks_array(
+                    rlp, second_item_value_starts_word, second_item_value_start_offset, pow2_array
+                );
+                return (
+                    n_nibbles_already_checked=n_nibbles_already_checked,
+                    item_of_interest=cast(&hash_le, felt*),
+                    item_of_interest_len=32,
+                );
+            }
         }
     } else {
         // Node has more than 2 items : it's a branch.
