@@ -251,7 +251,7 @@ func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let key_subset_256_le = key_subset_to_uint256(key_subset, key_subset_len);
     %{
         key_subset_256_le = hex(ids.key_subset_256_le.low + ids.key_subset_256_le.high*2**128)[2:]
-        print(f"Key subset 256 le: {key_subset_256_le}")
+        # print(f"Key subset 256 le: {key_subset_256_le}")
     %}
     let (key_subset_be_tmp: Uint256, n_bytes: felt) = uint256_reverse_endian_no_padding(
         key_subset_256_le, pow2_array
@@ -259,15 +259,15 @@ func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     %{
         orig_key = hex(ids.key_be.low + ids.key_be.high*2**128)[2:]
         key_subset = hex(ids.key_subset_be_tmp.low + ids.key_subset_be_tmp.high*2**128)[2:]
-        print(f"Orig key: {orig_key}, n_nibbles={len(orig_key)}")
-        print(f"Key subset: {key_subset}, n_nibbles={len(key_subset)}")
+        #print(f"Orig key: {orig_key}, n_nibbles={len(orig_key)}")
+        #print(f"Key subset: {key_subset}, n_nibbles={len(key_subset)}")
     %}
 
     // Cut nibble of the key subset if needed from the leftmost position. 0x123 -> 0x23
     local key_subset_be: Uint256;
     local bitwise_ptr_f: BitwiseBuiltin*;
     if (cut_nibble != 0) {
-        %{ print(f"Cut nibble") %}
+        // %{ print(f"Cut nibble") %}
         if (key_subset_be_tmp.high != 0) {
             let (_, key_susbet_be_high) = bitwise_divmod(
                 key_subset_be_tmp.high, pow2_array[8 * (n_bytes - 16) - 4]
