@@ -533,11 +533,9 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                 );
 
                 assert should_be_empty_prefix = 0x80;
-                return (
-                    n_nibbles_already_checked + key_be_nibbles + key_be_leading_zeroes_nibbles,
-                    rlp,
-                    -1,
-                );
+                // Returns the length of the key as if the key was fully checked so the check in the outer function will pass.
+                // Returns length of -1 to indicate non-inclusion.
+                return (key_be_nibbles + key_be_leading_zeroes_nibbles, rlp, -1);
             } else {
                 let (third_item_start_word, third_item_start_offset) = felt_divmod(
                     third_item_starts_at_byte, 8
