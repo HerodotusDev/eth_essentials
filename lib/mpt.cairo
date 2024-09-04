@@ -504,7 +504,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     } else {
         // Node has more than 2 items : it's a branch.
         if (last_node != 0) {
-            %{ print(f"Branch case, last node : yes") %}
+            // %{ print(f"Branch case, last node : yes") %}
 
             // Branch is the last node in the proof.
             // For an inclusion, proof, key should already be fully checked at this point.
