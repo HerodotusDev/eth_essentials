@@ -170,15 +170,15 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let list_prefix = extract_byte_at_pos(rlp[0], 0, pow2_array);
     local long_short_list: felt;  // 0 for short, !=0 for long.
     %{
-        if 0xc0 <= ids.list_prefix <= 0xf7:
+        from tools.py.hints import is_short_list, is_long_list
+        if is_short_list(ids.list_prefix):
             ids.long_short_list = 0
-            #print("List type : short")
-        elif 0xf8 <= ids.list_prefix <= 0xff:
+        elif is_long_list(ids.list_prefix):
             ids.long_short_list = 1
-            #print("List type: long")
         else:
-            print("Not a list.")
+            raise ValueError(f"Invalid list prefix: {hex(ids.list_prefix)}. Not a recognized list type.")
     %}
+
     local first_item_start_offset: felt;
     local list_len: felt;  // Bytes length of the list. (not including the prefix)
 
@@ -211,16 +211,19 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     // (range [0x80, 0xb7] (dec. [128, 183])).
 
     local first_item_type;
+    %{
+        from tools.py.hints import is_single_byte, is_short_string
+        if is_single_byte(ids.first_item_prefix):
+            ids.first_item_type = 0
+        elif is_short_string(ids.first_item_prefix):
+            ids.first_item_type = 1
+        else:
+            raise ValueError(f"Unsupported first item prefix: {hex(ids.first_item_prefix)}.")
+    %}
+
     local first_item_len;
     local second_item_starts_at_byte;
-    %{
-        if 0 <= ids.first_item_prefix <= 0x7f:
-            ids.first_item_type = 0 # Single byte
-        elif 0x80 <= ids.first_item_prefix <= 0xb7:
-            ids.first_item_type = 1 # Short string
-        else:
-            print(f"Unsupported first item type for prefix {ids.first_item_prefix=}")
-    %}
+
     if (first_item_type != 0) {
         // Short string
         assert [range_check_ptr + 3] = first_item_prefix - 0x80;
@@ -251,17 +254,15 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     // %{ print("second_item_prefix", hex(ids.second_item_prefix)) %}
     local second_item_type: felt;
     %{
-        if 0x00 <= ids.second_item_prefix <= 0x7f:
+        from tools.py.hints import is_single_byte, is_short_string, is_long_string
+        if is_single_byte(ids.second_item_prefix):
             ids.second_item_type = 0
-            #print(f"2nd item : single byte")
-        elif 0x80 <= ids.second_item_prefix <= 0xb7:
+        elif is_short_string(ids.second_item_prefix):
             ids.second_item_type = 1
-            #print(f"2nd item : short string {ids.second_item_prefix - 0x80} bytes")
-        elif 0xb8 <= ids.second_item_prefix <= 0xbf:
+        elif is_long_string(ids.second_item_prefix):
             ids.second_item_type = 2
-            #print(f"2nd item : long string (len_len {ids.second_item_prefix - 0xb7} bytes)")
         else:
-            print(f"2nd item : unknown type {ids.second_item_prefix}")
+            raise ValueError(f"Unsupported second item prefix: {hex(ids.second_item_prefix)}.")
     %}
 
     local second_item_bytes_len;
@@ -670,14 +671,13 @@ func jump_branch_node_till_element_at_index{range_check_ptr, bitwise_ptr: Bitwis
     let item_prefix = extract_byte_at_pos(rlp[prefix_start_word], prefix_start_offset, pow2_array);
     local item_type: felt;
     %{
-        if 0x00 <= ids.item_prefix <= 0x7f:
+        from tools.py.hints import is_single_byte, is_short_string
+        if is_single_byte(ids.item_prefix):
             ids.item_type = 0
-            #print(f"item : single byte")
-        elif 0x80 <= ids.item_prefix <= 0xb7:
+        elif is_short_string(ids.item_prefix):
             ids.item_type = 1
-            #print(f"item : short string at item {ids.item_start_index} {ids.item_prefix - 0x80} bytes")
         else:
-            print(f"item : unknown type {ids.item_prefix} for a branch node. Should be single byte or short string only.")
+            raise ValueError(f"Unsupported item prefix: {hex(ids.item_prefix)} for a branch node. Should be single byte or short string only.")
     %}
 
     if (item_type == 0) {
