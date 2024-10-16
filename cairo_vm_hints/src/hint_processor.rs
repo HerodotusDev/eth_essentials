@@ -1,4 +1,18 @@
-use crate::hints::print_var::{print_var, PRINT_VAR};
+use crate::hints::{
+    get_bit_length::{get_bit_length, GET_BIT_LENGTH},
+    test_is_valid_mmr_size_generate_random::{
+        test_is_valid_mmr_size_generate_random, TEST_IS_VALID_MMR_SIZE_GENERATE_RANDOM,
+    },
+    test_is_valid_mmr_size_generate_sequential::{
+        test_is_valid_mmr_size_generate_sequential, TEST_IS_VALID_MMR_SIZE_GENERATE_SEQUENTIAL,
+    },
+    test_is_valid_mmr_size_print_1::{
+        test_is_valid_mmr_size_print_1, TEST_IS_VALID_MMR_SIZE_PRINT_1,
+    },
+    test_is_valid_mmr_size_print_2::{
+        test_is_valid_mmr_size_print_2, TEST_IS_VALID_MMR_SIZE_PRINT_2,
+    },
+};
 use cairo_vm::{
     hint_processor::{
         builtin_hint_processor::builtin_hint_processor_definition::{
@@ -34,7 +48,19 @@ fn run_hint(
     constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     match hint_data.code.as_str() {
-        PRINT_VAR => print_var(vm, exec_scope, hint_data, constants),
+        TEST_IS_VALID_MMR_SIZE_PRINT_1 => {
+            test_is_valid_mmr_size_print_1(vm, exec_scope, hint_data, constants)
+        }
+        TEST_IS_VALID_MMR_SIZE_PRINT_2 => {
+            test_is_valid_mmr_size_print_2(vm, exec_scope, hint_data, constants)
+        }
+        TEST_IS_VALID_MMR_SIZE_GENERATE_SEQUENTIAL => {
+            test_is_valid_mmr_size_generate_sequential(vm, exec_scope, hint_data, constants)
+        }
+        TEST_IS_VALID_MMR_SIZE_GENERATE_RANDOM => {
+            test_is_valid_mmr_size_generate_random(vm, exec_scope, hint_data, constants)
+        }
+        GET_BIT_LENGTH => get_bit_length(vm, exec_scope, hint_data, constants),
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),
         )),
