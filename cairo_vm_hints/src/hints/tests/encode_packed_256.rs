@@ -44,7 +44,7 @@ pub fn hint_generate_test_vector(
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     let (x_list, y_list): (Vec<[u8; 32]>, Vec<[u8; 32]>) =
-        (0..256).map(|_| (get_random(), get_random())).unzip();
+        (0..512).map(|_| (get_random(), get_random())).unzip();
 
     let keccak_result_list: Vec<[u8; 32]> = x_list
         .iter()
