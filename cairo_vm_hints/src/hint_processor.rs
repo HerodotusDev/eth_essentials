@@ -1,18 +1,5 @@
-use crate::hints::{
-    get_bit_length::{get_bit_length, GET_BIT_LENGTH},
-    test_is_valid_mmr_size_generate_random::{
-        test_is_valid_mmr_size_generate_random, TEST_IS_VALID_MMR_SIZE_GENERATE_RANDOM,
-    },
-    test_is_valid_mmr_size_generate_sequential::{
-        test_is_valid_mmr_size_generate_sequential, TEST_IS_VALID_MMR_SIZE_GENERATE_SEQUENTIAL,
-    },
-    test_is_valid_mmr_size_print_1::{
-        test_is_valid_mmr_size_print_1, TEST_IS_VALID_MMR_SIZE_PRINT_1,
-    },
-    test_is_valid_mmr_size_print_2::{
-        test_is_valid_mmr_size_print_2, TEST_IS_VALID_MMR_SIZE_PRINT_2,
-    },
-};
+use crate::hints::lib;
+use crate::hints::tests;
 use cairo_vm::{
     hint_processor::{
         builtin_hint_processor::builtin_hint_processor_definition::{
@@ -48,19 +35,21 @@ fn run_hint(
     constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     match hint_data.code.as_str() {
-        TEST_IS_VALID_MMR_SIZE_PRINT_1 => {
-            test_is_valid_mmr_size_print_1(vm, exec_scope, hint_data, constants)
+        tests::print::HINT_PRINT_BREAKLINE => {
+            tests::print::hint_print_breakline(vm, exec_scope, hint_data, constants)
         }
-        TEST_IS_VALID_MMR_SIZE_PRINT_2 => {
-            test_is_valid_mmr_size_print_2(vm, exec_scope, hint_data, constants)
+        tests::print::HINT_PRINT_PASS => {
+            tests::print::hint_print_pass(vm, exec_scope, hint_data, constants)
         }
-        TEST_IS_VALID_MMR_SIZE_GENERATE_SEQUENTIAL => {
-            test_is_valid_mmr_size_generate_sequential(vm, exec_scope, hint_data, constants)
+        tests::mmr_size_generate::HINT_GENERATE_SEQUENTIAL => {
+            tests::mmr_size_generate::hint_generate_sequential(vm, exec_scope, hint_data, constants)
         }
-        TEST_IS_VALID_MMR_SIZE_GENERATE_RANDOM => {
-            test_is_valid_mmr_size_generate_random(vm, exec_scope, hint_data, constants)
+        tests::mmr_size_generate::HINT_GENERATE_RANDOM => {
+            tests::mmr_size_generate::hint_generate_random(vm, exec_scope, hint_data, constants)
         }
-        GET_BIT_LENGTH => get_bit_length(vm, exec_scope, hint_data, constants),
+        lib::bit_length::HINT_BIT_LENGTH => {
+            lib::bit_length::hint_bit_length(vm, exec_scope, hint_data, constants)
+        }
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),
         )),
