@@ -1,3 +1,4 @@
+pub mod dw_hack_test;
 pub mod is_valid_mmr_size;
 
 use crate::ExtendedHintProcessor;

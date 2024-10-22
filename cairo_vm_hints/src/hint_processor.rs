@@ -50,6 +50,20 @@ fn run_hint(
         lib::bit_length::HINT_BIT_LENGTH => {
             lib::bit_length::hint_bit_length(vm, exec_scope, hint_data, constants)
         }
+        tests::dw_hack::HINT_BIT_LENGTH_ASSIGN_140 => {
+            tests::dw_hack::hint_bit_length_assign_140(vm, exec_scope, hint_data, constants)
+        }
+        tests::dw_hack::HINT_BIT_LENGTH_ASSIGN_2500 => {
+            tests::dw_hack::hint_bit_length_assign_2500(vm, exec_scope, hint_data, constants)
+        }
+        tests::dw_hack::HINT_BIT_LENGTH_ASSIGN_NEGATIVE_ONE => {
+            tests::dw_hack::hint_bit_length_assign_negative_one(
+                vm, exec_scope, hint_data, constants,
+            )
+        }
+        tests::dw_hack::HINT_PRINT_NS => {
+            tests::dw_hack::hint_print_ns(vm, exec_scope, hint_data, constants)
+        }
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),
         )),
