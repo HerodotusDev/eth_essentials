@@ -64,6 +64,11 @@ fn run_hint(
         tests::dw_hack::HINT_PRINT_NS => {
             tests::dw_hack::hint_print_ns(vm, exec_scope, hint_data, constants)
         }
+        tests::encode_packed_256::HINT_GENERATE_TEST_VECTOR => {
+            tests::encode_packed_256::hint_generate_test_vector(
+                vm, exec_scope, hint_data, constants,
+            )
+        }
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),
         )),

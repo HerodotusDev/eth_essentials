@@ -239,6 +239,7 @@ dependencies = [
  "cairo-vm",
  "clap",
  "rand",
+ "sha3",
  "starknet-types-core",
  "thiserror",
 ]
