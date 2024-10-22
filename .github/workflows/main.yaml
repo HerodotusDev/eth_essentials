@@ -9,7 +9,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up python
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
@@ -24,17 +24,22 @@ jobs:
       - name: Check cairo Formatting
         run: |
           source venv/bin/activate && ./tools/make/cairo_format_check.sh
+
+      - name: Check rust Formatting
+        run: |
+          cargo fmt --check
+
       - name: Compile cairo files
         run: source venv/bin/activate && make build
 
-      - name: Run Cairo tests
+      - name: Run cairo tests
         env:
           RPC_URL_MAINNET: ${{ secrets.RPC_URL_MAINNET }}
           RPC_URL: ${{ secrets.RPC_URL }}
         run: source ./tools/make/cairo_tests.sh
 
-      - name: Run MPT tests
-        run: source ./tools/make/fuzzer.sh tests/fuzzing/mpt.cairo --ci
-
-      - name: Run cairo_vm_hints tests
+      - name: Run cairo_vm hints tests
         run: cargo test --release -- --show-output
+
+      - name: Run mpt tests
+        run: source ./tools/make/fuzzer.sh tests/fuzzing/mpt.cairo --ci
