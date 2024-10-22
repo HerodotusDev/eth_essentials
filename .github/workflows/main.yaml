@@ -37,4 +37,4 @@ jobs:
         run: source ./tools/make/fuzzer.sh tests/fuzzing/mpt.cairo --ci
 
       - name: Run cairo_vm_hints tests
-        run: cargo test
+        run: cargo test --release -- --show-output
