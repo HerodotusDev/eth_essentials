@@ -69,6 +69,9 @@ fn run_hint(
                 vm, exec_scope, hint_data, constants,
             )
         }
+        lib::block_header::HINT_RLP_BIGINT_SIZE => {
+            lib::block_header::hint_rlp_bigint_size(vm, exec_scope, hint_data, constants)
+        }
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),
         )),
