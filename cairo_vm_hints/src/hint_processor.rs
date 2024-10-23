@@ -1,5 +1,8 @@
 use crate::hints::{
-    get_bit_length::{get_bit_length, GET_BIT_LENGTH},
+    bit_length_mmr::{bit_length_mmr, BIT_LENGTH_MMR},
+    bit_length_x::{bit_length_x, BIT_LENGTH_X},
+    mmr_left_child::{mmr_left_child, MMR_LEFT_CHILD},
+    test_construct_mmr::{test_construct_mmr, TEST_CONSTRUCT_MMR},
     test_is_valid_mmr_size_generate_random::{
         test_is_valid_mmr_size_generate_random, TEST_IS_VALID_MMR_SIZE_GENERATE_RANDOM,
     },
@@ -60,7 +63,10 @@ fn run_hint(
         TEST_IS_VALID_MMR_SIZE_GENERATE_RANDOM => {
             test_is_valid_mmr_size_generate_random(vm, exec_scope, hint_data, constants)
         }
-        GET_BIT_LENGTH => get_bit_length(vm, exec_scope, hint_data, constants),
+        BIT_LENGTH_X => bit_length_x(vm, exec_scope, hint_data, constants),
+        BIT_LENGTH_MMR => bit_length_mmr(vm, exec_scope, hint_data, constants),
+        TEST_CONSTRUCT_MMR => test_construct_mmr(vm, exec_scope, hint_data, constants),
+        MMR_LEFT_CHILD => mmr_left_child(vm, exec_scope, hint_data, constants),
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),
         )),

@@ -8,9 +8,9 @@ use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
 use std::collections::HashMap;
 
-pub const GET_BIT_LENGTH: &str = "ids.bit_length = ids.x.bit_length()";
+pub const BIT_LENGTH_X: &str = "ids.bit_length = ids.x.bit_length()";
 
-pub fn get_bit_length(
+pub fn bit_length_x(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
