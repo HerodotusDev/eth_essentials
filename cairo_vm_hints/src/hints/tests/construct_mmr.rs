@@ -142,8 +142,7 @@ pub fn test_construct_mmr(
         )?,
         &keccak_hash_array
             .iter()
-            .map(|x| split_u256(x))
-            .flatten()
+            .flat_map(split_u256)
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
     )?;
@@ -192,15 +191,14 @@ pub fn test_construct_mmr(
         )?,
         &previous_peaks_keccak
             .iter()
-            .map(|x| split_u256(&x))
-            .flatten()
+            .flat_map(split_u256)
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
     )?;
 
     insert_value_from_var_name(
         "mmr_last_root_poseidon",
-        MaybeRelocatable::Int(mmr_poseidon.get_root().try_into().unwrap()),
+        MaybeRelocatable::Int(mmr_poseidon.get_root().into()),
         vm,
         &hint_data.ids_data,
         &hint_data.ap_tracking,
@@ -214,7 +212,7 @@ pub fn test_construct_mmr(
         )?,
         &split_u256(&mmr_keccak.get_root())
             .iter()
-            .map(|x| MaybeRelocatable::Int(x.try_into().unwrap()))
+            .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
     )?;
 
@@ -227,7 +225,7 @@ pub fn test_construct_mmr(
 
     insert_value_from_var_name(
         "expected_new_root_poseidon",
-        MaybeRelocatable::Int(mmr_poseidon.get_root().try_into().unwrap()),
+        MaybeRelocatable::Int(mmr_poseidon.get_root().into()),
         vm,
         &hint_data.ids_data,
         &hint_data.ap_tracking,
@@ -241,7 +239,7 @@ pub fn test_construct_mmr(
         )?,
         &split_u256(&mmr_keccak.get_root())
             .iter()
-            .map(|x| MaybeRelocatable::Int(x.try_into().unwrap()))
+            .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
     )?;
     insert_value_from_var_name(
