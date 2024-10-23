@@ -72,6 +72,15 @@ fn run_hint(
         lib::block_header::HINT_RLP_BIGINT_SIZE => {
             lib::block_header::hint_rlp_bigint_size(vm, exec_scope, hint_data, constants)
         }
+        lib::mmr::bit_length::MMR_BIT_LENGTH => {
+            lib::mmr::bit_length::mmr_bit_length(vm, exec_scope, hint_data, constants)
+        }
+        tests::construct_mmr::TEST_CONSTRUCT_MMR => {
+            tests::construct_mmr::test_construct_mmr(vm, exec_scope, hint_data, constants)
+        }
+        lib::mmr::left_child::MMR_LEFT_CHILD => {
+            lib::mmr::left_child::mmr_left_child(vm, exec_scope, hint_data, constants)
+        }
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),
         )),
