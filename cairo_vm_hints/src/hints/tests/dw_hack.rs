@@ -1,7 +1,5 @@
+use crate::utils::{get_value, write_value};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-    get_integer_from_var_name, insert_value_from_var_name,
-};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
@@ -16,12 +14,11 @@ pub fn hint_bit_length_assign_140(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    insert_value_from_var_name(
+    write_value(
         "bit_length",
         MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x8C")),
         vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
+        &hint_data,
     )?;
 
     Ok(())
@@ -35,12 +32,11 @@ pub fn hint_bit_length_assign_negative_one(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    insert_value_from_var_name(
+    write_value(
         "bit_length",
         MaybeRelocatable::Int(Felt252::ZERO - Felt252::ONE),
         vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
+        &hint_data,
     )?;
 
     Ok(())
@@ -54,12 +50,11 @@ pub fn hint_bit_length_assign_2500(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    insert_value_from_var_name(
+    write_value(
         "bit_length",
         MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x9C4")),
         vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
+        &hint_data,
     )?;
 
     Ok(())
@@ -75,8 +70,8 @@ pub fn hint_print_ns(
 ) -> Result<(), HintError> {
     println!(
         "N: {}, n: {}",
-        get_integer_from_var_name("N", vm, &hint_data.ids_data, &hint_data.ap_tracking)?,
-        get_integer_from_var_name("n", vm, &hint_data.ids_data, &hint_data.ap_tracking)?
+        get_value("N", vm, &hint_data)?,
+        get_value("n", vm, &hint_data)?
     );
     Ok(())
 }

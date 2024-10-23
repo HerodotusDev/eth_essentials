@@ -1,7 +1,4 @@
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-    get_ptr_from_var_name, insert_value_from_var_name,
-};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
@@ -10,6 +7,8 @@ use rand::Rng;
 use sha3::Digest;
 use sha3::Keccak256;
 use std::collections::HashMap;
+
+use crate::utils::{write_value, write_vector};
 
 fn get_random() -> [u8; 32] {
     let mut rng = rand::thread_rng();
@@ -52,8 +51,6 @@ pub fn hint_generate_test_vector(
         .map(|(x, y)| keccak(x, y))
         .collect();
 
-    let x_array_ptr =
-        get_ptr_from_var_name("x_array", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
     let x_array: Vec<MaybeRelocatable> = x_list
         .into_iter()
         .flat_map(|x| {
@@ -64,10 +61,8 @@ pub fn hint_generate_test_vector(
             ]
         })
         .collect();
-    vm.segments.load_data(x_array_ptr, &x_array)?;
+    write_vector("x_array", &x_array, vm, &hint_data)?;
 
-    let y_array_ptr =
-        get_ptr_from_var_name("y_array", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
     let y_array: Vec<MaybeRelocatable> = y_list
         .into_iter()
         .flat_map(|x| {
@@ -78,14 +73,8 @@ pub fn hint_generate_test_vector(
             ]
         })
         .collect();
-    vm.segments.load_data(y_array_ptr, &y_array)?;
+    write_vector("y_array", &y_array, vm, &hint_data)?;
 
-    let keccak_result_array_ptr = get_ptr_from_var_name(
-        "keccak_result_array",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
     let keccak_result_array: Vec<MaybeRelocatable> = keccak_result_list
         .into_iter()
         .flat_map(|x| {
@@ -96,15 +85,13 @@ pub fn hint_generate_test_vector(
             ]
         })
         .collect();
-    vm.segments
-        .load_data(keccak_result_array_ptr, &keccak_result_array)?;
+    write_vector("keccak_result_array", &keccak_result_array, vm, &hint_data)?;
 
-    insert_value_from_var_name(
+    write_value(
         "len",
         MaybeRelocatable::Int(Felt252::from(keccak_result_array.len() / 2)),
         vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
+        &hint_data,
     )?;
 
     Ok(())

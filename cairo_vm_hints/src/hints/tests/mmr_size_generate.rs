@@ -1,7 +1,4 @@
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-    get_integer_from_var_name, get_ptr_from_var_name,
-};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
@@ -9,6 +6,8 @@ use cairo_vm::Felt252;
 use rand::{thread_rng, Rng};
 use starknet_types_core::felt::Felt;
 use std::collections::{HashMap, HashSet};
+
+use crate::utils::{get_value, write_vector};
 
 fn is_valid_mmr_size(mut mmr_size: u64) -> bool {
     if mmr_size == 0 {
@@ -36,10 +35,7 @@ pub fn hint_generate_random(
     // let ap_tracking = &hint_data.ap_tracking;
     // let a = get_integer_from_var_name("x", vm, ids_data, ap_tracking)?;
     // vm.segments.write_arg(vm.seg, arg)
-    let num_sizes: u64 =
-        get_integer_from_var_name("num_sizes", vm, &hint_data.ids_data, &hint_data.ap_tracking)?
-            .try_into()
-            .unwrap();
+    let num_sizes: u64 = get_value("num_sizes", vm, &hint_data)?.try_into().unwrap();
 
     println!(
         "Testing is_valid_mmr_size against python implementation with {} random sizes in [0, 20000000)...",
@@ -56,23 +52,8 @@ pub fn hint_generate_random(
         expected_output.push(MaybeRelocatable::Int(y.into()));
     }
 
-    let expected_output_ptr = get_ptr_from_var_name(
-        "expected_output",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
-
-    let input_array_ptr = get_ptr_from_var_name(
-        "input_array",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
-
-    vm.segments.load_data(input_array_ptr, &input_array)?;
-    vm.segments
-        .load_data(expected_output_ptr, &expected_output)?;
+    write_vector("input_array", &input_array, vm, &hint_data)?;
+    write_vector("expected_output", &expected_output, vm, &hint_data)?;
 
     Ok(())
 }
@@ -89,10 +70,7 @@ pub fn hint_generate_sequential(
     // let ap_tracking = &hint_data.ap_tracking;
     // let a = get_integer_from_var_name("x", vm, ids_data, ap_tracking)?;
     // vm.segments.write_arg(vm.seg, arg)
-    let num_elems: u64 =
-        get_integer_from_var_name("num_elems", vm, &hint_data.ids_data, &hint_data.ap_tracking)?
-            .try_into()
-            .unwrap();
+    let num_elems: u64 = get_value("num_elems", vm, &hint_data)?.try_into().unwrap();
 
     println!(
         "Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {})...",
@@ -112,23 +90,8 @@ pub fn hint_generate_sequential(
         .map(|x| MaybeRelocatable::Int(x.into()))
         .collect::<Vec<_>>();
 
-    let expected_output_ptr = get_ptr_from_var_name(
-        "expected_output",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
-
-    let input_array_ptr = get_ptr_from_var_name(
-        "input_array",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
-
-    vm.segments.load_data(input_array_ptr, &input_array)?;
-    vm.segments
-        .load_data(expected_output_ptr, &expected_output)?;
+    write_vector("input_array", &input_array, vm, &hint_data)?;
+    write_vector("expected_output", &expected_output, vm, &hint_data)?;
 
     Ok(())
 }
