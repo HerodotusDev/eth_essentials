@@ -1,4 +1,4 @@
-use crate::mmr::{Hasher, Keccak, Mmr, Poseidon};
+use crate::mmr::{Keccak, Mmr, Poseidon};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
     get_ptr_from_var_name, get_relocatable_from_var_name, insert_value_from_var_name,
