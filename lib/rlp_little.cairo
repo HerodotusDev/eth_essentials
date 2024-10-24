@@ -421,7 +421,7 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         //      print(f"key_nibbles: {ids.key_nibbles}")
         //      print(f"key_leading_zeroes_nibbles: {ids.key_leading_zeroes_nibbles}")
         // %}
-        %{
+        %{ //TODO
             key_hex = ids.key_leading_zeroes_nibbles * '0' + hex(ids.key.low + (2 ** 128) * ids.key.high)[2:]
             expected_nibble = int(key_hex[ids.nibble_index + ids.key_leading_zeroes_nibbles], 16)
         %}
@@ -560,15 +560,15 @@ func extract_n_bytes_from_le_64_chunks_array{range_check_ptr}(
 
     if (n_words == 1) {
         local needs_next_word: felt;
-        local avl_bytes_in_first_word = 8 - start_offset;
-        %{ ids.needs_next_word = 1 if ids.n_bytes > ids.avl_bytes_in_first_word else 0 %}
+        local avl_bytes_in_word = 8 - start_offset;
+        %{ ids.needs_next_word = 1 if ids.n_bytes > ids.avl_bytes_in_word else 0 %}
         if (needs_next_word == 0) {
             // %{ print(f"current_word={hex(ids.current_word)}") %}
             let (_, last_word) = felt_divmod(current_word, pow2_array[8 * n_ending_bytes]);
             assert res[0] = last_word;
             return (res, 1);
         } else {
-            // %{ print(f"needs next word, avl_bytes_in_first_word={ids.avl_bytes_in_first_word}") %}
+            // %{ print(f"needs next word, avl_bytes_in_word={ids.avl_bytes_in_word}") %}
             // %{ print(f"current_word={hex(ids.current_word)}") %}
 
             let (_, last_word) = felt_divmod(

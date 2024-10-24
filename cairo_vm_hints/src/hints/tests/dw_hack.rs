@@ -18,7 +18,7 @@ pub fn hint_bit_length_assign_140(
         "bit_length",
         MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x8C")),
         vm,
-        &hint_data,
+        hint_data,
     )?;
 
     Ok(())
@@ -36,7 +36,7 @@ pub fn hint_bit_length_assign_negative_one(
         "bit_length",
         MaybeRelocatable::Int(Felt252::ZERO - Felt252::ONE),
         vm,
-        &hint_data,
+        hint_data,
     )?;
 
     Ok(())
@@ -54,7 +54,7 @@ pub fn hint_bit_length_assign_2500(
         "bit_length",
         MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x9C4")),
         vm,
-        &hint_data,
+        hint_data,
     )?;
 
     Ok(())
@@ -70,8 +70,8 @@ pub fn hint_print_ns(
 ) -> Result<(), HintError> {
     println!(
         "N: {}, n: {}",
-        get_value("N", vm, &hint_data)?,
-        get_value("n", vm, &hint_data)?
+        get_value("N", vm, hint_data)?,
+        get_value("n", vm, hint_data)?
     );
     Ok(())
 }

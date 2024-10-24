@@ -61,7 +61,7 @@ pub fn hint_generate_test_vector(
             ]
         })
         .collect();
-    write_vector("x_array", &x_array, vm, &hint_data)?;
+    write_vector("x_array", &x_array, vm, hint_data)?;
 
     let y_array: Vec<MaybeRelocatable> = y_list
         .into_iter()
@@ -73,7 +73,7 @@ pub fn hint_generate_test_vector(
             ]
         })
         .collect();
-    write_vector("y_array", &y_array, vm, &hint_data)?;
+    write_vector("y_array", &y_array, vm, hint_data)?;
 
     let keccak_result_array: Vec<MaybeRelocatable> = keccak_result_list
         .into_iter()
@@ -85,13 +85,13 @@ pub fn hint_generate_test_vector(
             ]
         })
         .collect();
-    write_vector("keccak_result_array", &keccak_result_array, vm, &hint_data)?;
+    write_vector("keccak_result_array", &keccak_result_array, vm, hint_data)?;
 
     write_value(
         "len",
         MaybeRelocatable::Int(Felt252::from(keccak_result_array.len() / 2)),
         vm,
-        &hint_data,
+        hint_data,
     )?;
 
     Ok(())

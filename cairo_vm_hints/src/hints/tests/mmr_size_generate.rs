@@ -35,7 +35,7 @@ pub fn hint_generate_random(
     // let ap_tracking = &hint_data.ap_tracking;
     // let a = get_integer_from_var_name("x", vm, ids_data, ap_tracking)?;
     // vm.segments.write_arg(vm.seg, arg)
-    let num_sizes: u64 = get_value("num_sizes", vm, &hint_data)?.try_into().unwrap();
+    let num_sizes: u64 = get_value("num_sizes", vm, hint_data)?.try_into().unwrap();
 
     println!(
         "Testing is_valid_mmr_size against python implementation with {} random sizes in [0, 20000000)...",
@@ -52,8 +52,8 @@ pub fn hint_generate_random(
         expected_output.push(MaybeRelocatable::Int(y.into()));
     }
 
-    write_vector("input_array", &input_array, vm, &hint_data)?;
-    write_vector("expected_output", &expected_output, vm, &hint_data)?;
+    write_vector("input_array", &input_array, vm, hint_data)?;
+    write_vector("expected_output", &expected_output, vm, hint_data)?;
 
     Ok(())
 }
@@ -70,7 +70,7 @@ pub fn hint_generate_sequential(
     // let ap_tracking = &hint_data.ap_tracking;
     // let a = get_integer_from_var_name("x", vm, ids_data, ap_tracking)?;
     // vm.segments.write_arg(vm.seg, arg)
-    let num_elems: u64 = get_value("num_elems", vm, &hint_data)?.try_into().unwrap();
+    let num_elems: u64 = get_value("num_elems", vm, hint_data)?.try_into().unwrap();
 
     println!(
         "Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {})...",
@@ -90,8 +90,8 @@ pub fn hint_generate_sequential(
         .map(|x| MaybeRelocatable::Int(x.into()))
         .collect::<Vec<_>>();
 
-    write_vector("input_array", &input_array, vm, &hint_data)?;
-    write_vector("expected_output", &expected_output, vm, &hint_data)?;
+    write_vector("input_array", &input_array, vm, hint_data)?;
+    write_vector("expected_output", &expected_output, vm, hint_data)?;
 
     Ok(())
 }

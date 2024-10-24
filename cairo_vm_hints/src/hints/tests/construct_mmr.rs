@@ -113,7 +113,7 @@ pub fn test_construct_mmr(
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
         vm,
-        &hint_data,
+        hint_data,
     )?;
     write_vector(
         "keccak_hash_array",
@@ -123,7 +123,7 @@ pub fn test_construct_mmr(
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
         vm,
-        &hint_data,
+        hint_data,
     )?;
 
     let mut mmr_poseidon = Mmr::<Poseidon>::new();
@@ -137,7 +137,7 @@ pub fn test_construct_mmr(
         .map(|_| rng.gen_biguint_range(&BigUint::one(), &two_pow_256))
         .for_each(|x| mmr_keccak.append(x));
 
-    write_value("mmr_offset", mmr_poseidon.size(), vm, &hint_data)?;
+    write_value("mmr_offset", mmr_poseidon.size(), vm, hint_data)?;
 
     let previous_peaks_poseidon = mmr_poseidon.retrieve_nodes(mmr_poseidon.get_peaks());
     let previous_peaks_keccak = mmr_keccak.retrieve_nodes(mmr_keccak.get_peaks());
@@ -149,7 +149,7 @@ pub fn test_construct_mmr(
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
         vm,
-        &hint_data,
+        hint_data,
     )?;
     write_vector(
         "previous_peaks_values_keccak",
@@ -159,13 +159,13 @@ pub fn test_construct_mmr(
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
         vm,
-        &hint_data,
+        hint_data,
     )?;
     write_value(
         "mmr_last_root_poseidon",
         MaybeRelocatable::Int(mmr_poseidon.get_root().into()),
         vm,
-        &hint_data,
+        hint_data,
     )?;
     write_struct(
         "mmr_last_root_keccak",
@@ -174,7 +174,7 @@ pub fn test_construct_mmr(
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
         vm,
-        &hint_data,
+        hint_data,
     )?;
 
     for elem in poseidon_hash_array.iter().rev() {
@@ -188,7 +188,7 @@ pub fn test_construct_mmr(
         "expected_new_root_poseidon",
         MaybeRelocatable::Int(mmr_poseidon.get_root().into()),
         vm,
-        &hint_data,
+        hint_data,
     )?;
     write_struct(
         "expected_new_root_keccak",
@@ -197,9 +197,9 @@ pub fn test_construct_mmr(
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
         vm,
-        &hint_data,
+        hint_data,
     )?;
-    write_value("expected_new_len", mmr_keccak.size(), vm, &hint_data)?;
+    write_value("expected_new_len", mmr_keccak.size(), vm, hint_data)?;
 
     Ok(())
 }
