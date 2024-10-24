@@ -1,8 +1,6 @@
-use crate::mmr::{Hasher, Keccak, Mmr, Poseidon};
+use crate::mmr::{Keccak, Mmr, Poseidon};
+use crate::utils::{split_u256, write_struct, write_value, write_vector};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-    get_ptr_from_var_name, get_relocatable_from_var_name, insert_value_from_var_name,
-};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
@@ -78,13 +76,6 @@ ids.expected_new_root_poseidon = mmr_poseidon.get_root()
 ids.expected_new_root_keccak.low, ids.expected_new_root_keccak.high = split_128(mmr_keccak.get_root())
 ids.expected_new_len = len(mmr_poseidon.pos_hash)";
 
-fn split_u256(number: &BigUint) -> [BigUint; 2] {
-    let mut iter = number.to_bytes_le().into_iter();
-    let low = &iter.by_ref().take(16).collect::<Vec<_>>();
-    let high = &iter.collect::<Vec<_>>();
-    [BigUint::from_bytes_le(low), BigUint::from_bytes_le(high)]
-}
-
 pub fn test_construct_mmr(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
@@ -106,13 +97,7 @@ pub fn test_construct_mmr(
 
     let previous_n_values = rng.gen_range(1..=200);
     let n_values_to_append = rng.gen_range(1..=200);
-    insert_value_from_var_name(
-        "n_values_to_append",
-        n_values_to_append,
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
+    write_value("n_values_to_append", n_values_to_append, vm, hint_data)?;
 
     let poseidon_hash_array = (0..n_values_to_append)
         .map(|_| rng.gen_biguint_range(&BigUint::one(), &stark_prime))
@@ -121,31 +106,24 @@ pub fn test_construct_mmr(
         .map(|_| rng.gen_biguint_range(&BigUint::one(), &two_pow_256))
         .collect::<Vec<_>>();
 
-    vm.segments.load_data(
-        get_ptr_from_var_name(
-            "poseidon_hash_array",
-            vm,
-            &hint_data.ids_data,
-            &hint_data.ap_tracking,
-        )?,
+    write_vector(
+        "poseidon_hash_array",
         &poseidon_hash_array
             .iter()
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
+        vm,
+        hint_data,
     )?;
-    vm.segments.load_data(
-        get_ptr_from_var_name(
-            "keccak_hash_array",
-            vm,
-            &hint_data.ids_data,
-            &hint_data.ap_tracking,
-        )?,
+    write_vector(
+        "keccak_hash_array",
         &keccak_hash_array
             .iter()
-            .map(|x| split_u256(x))
-            .flatten()
+            .flat_map(split_u256)
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
+        vm,
+        hint_data,
     )?;
 
     let mut mmr_poseidon = Mmr::<Poseidon>::new();
@@ -159,63 +137,44 @@ pub fn test_construct_mmr(
         .map(|_| rng.gen_biguint_range(&BigUint::one(), &two_pow_256))
         .for_each(|x| mmr_keccak.append(x));
 
-    insert_value_from_var_name(
-        "mmr_offset",
-        mmr_poseidon.size(),
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
+    write_value("mmr_offset", mmr_poseidon.size(), vm, hint_data)?;
 
     let previous_peaks_poseidon = mmr_poseidon.retrieve_nodes(mmr_poseidon.get_peaks());
     let previous_peaks_keccak = mmr_keccak.retrieve_nodes(mmr_keccak.get_peaks());
 
-    vm.segments.load_data(
-        get_ptr_from_var_name(
-            "previous_peaks_values_poseidon",
-            vm,
-            &hint_data.ids_data,
-            &hint_data.ap_tracking,
-        )?,
+    write_vector(
+        "previous_peaks_values_poseidon",
         &previous_peaks_poseidon
             .iter()
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
+        vm,
+        hint_data,
     )?;
-
-    vm.segments.load_data(
-        get_ptr_from_var_name(
-            "previous_peaks_values_keccak",
-            vm,
-            &hint_data.ids_data,
-            &hint_data.ap_tracking,
-        )?,
+    write_vector(
+        "previous_peaks_values_keccak",
         &previous_peaks_keccak
             .iter()
-            .map(|x| split_u256(&x))
-            .flatten()
+            .flat_map(split_u256)
             .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
-    )?;
-
-    insert_value_from_var_name(
-        "mmr_last_root_poseidon",
-        MaybeRelocatable::Int(mmr_poseidon.get_root().try_into().unwrap()),
         vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
+        hint_data,
     )?;
-    vm.segments.load_data(
-        get_relocatable_from_var_name(
-            "mmr_last_root_keccak",
-            vm,
-            &hint_data.ids_data,
-            &hint_data.ap_tracking,
-        )?,
+    write_value(
+        "mmr_last_root_poseidon",
+        MaybeRelocatable::Int(mmr_poseidon.get_root().into()),
+        vm,
+        hint_data,
+    )?;
+    write_struct(
+        "mmr_last_root_keccak",
         &split_u256(&mmr_keccak.get_root())
             .iter()
-            .map(|x| MaybeRelocatable::Int(x.try_into().unwrap()))
+            .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
+        vm,
+        hint_data,
     )?;
 
     for elem in poseidon_hash_array.iter().rev() {
@@ -225,32 +184,22 @@ pub fn test_construct_mmr(
         mmr_keccak.append(elem.clone());
     }
 
-    insert_value_from_var_name(
+    write_value(
         "expected_new_root_poseidon",
-        MaybeRelocatable::Int(mmr_poseidon.get_root().try_into().unwrap()),
+        MaybeRelocatable::Int(mmr_poseidon.get_root().into()),
         vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
+        hint_data,
     )?;
-    vm.segments.load_data(
-        get_relocatable_from_var_name(
-            "expected_new_root_keccak",
-            vm,
-            &hint_data.ids_data,
-            &hint_data.ap_tracking,
-        )?,
+    write_struct(
+        "expected_new_root_keccak",
         &split_u256(&mmr_keccak.get_root())
             .iter()
-            .map(|x| MaybeRelocatable::Int(x.try_into().unwrap()))
+            .map(|x| MaybeRelocatable::Int(x.into()))
             .collect::<Vec<_>>(),
-    )?;
-    insert_value_from_var_name(
-        "expected_new_len",
-        mmr_keccak.size(),
         vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
+        hint_data,
     )?;
+    write_value("expected_new_len", mmr_keccak.size(), vm, hint_data)?;
 
     Ok(())
 }

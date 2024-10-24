@@ -41,7 +41,7 @@ impl Hasher for Poseidon {
     }
 
     fn hash(&self, x: &BigUint, y: &BigUint) -> BigUint {
-        poseidon_hash(x.try_into().unwrap(), y.try_into().unwrap()).to_biguint()
+        poseidon_hash(x.into(), y.into()).to_biguint()
     }
 }
 
@@ -50,6 +50,12 @@ pub struct Mmr<H: Hasher> {
     hasher: H,
     nodes: Vec<BigUint>,
     leaf_count: usize,
+}
+
+impl<H: Hasher> Default for Mmr<H> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<H: Hasher> Mmr<H> {
@@ -102,7 +108,7 @@ impl<H: Hasher> Mmr<H> {
         self.nodes.push(element.clone());
         let mut last_node = element;
         for peak in peaks.iter().rev().take(no_merged_peaks as usize) {
-            last_node = self.hasher.hash(&peak, &last_node);
+            last_node = self.hasher.hash(peak, &last_node);
             self.nodes.push(last_node.clone());
         }
     }

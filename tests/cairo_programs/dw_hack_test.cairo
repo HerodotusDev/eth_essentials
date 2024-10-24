@@ -24,10 +24,7 @@ func main{range_check_ptr}() {
 func compute_height_pre_alloc_pow2_hack0{range_check_ptr, pow2_array: felt*}(x: felt) -> felt {
     alloc_locals;
     local bit_length;
-    %{
-        x = ids.x
-        ids.bit_length = 140
-    %}
+    %{ ids.bit_length = 140 %}
     // Computes N=2^bit_length and n=2^(bit_length-1)
     // x is supposed to verify n = 2^(b-1) <= x < N = 2^bit_length <=> x has bit_length bits
 
@@ -55,10 +52,7 @@ func compute_height_pre_alloc_pow2_hack0{range_check_ptr, pow2_array: felt*}(x: 
 func compute_height_pre_alloc_pow2_hack1{range_check_ptr, pow2_array: felt*}(x: felt) -> felt {
     alloc_locals;
     local bit_length;
-    %{
-        x = ids.x
-        ids.bit_length = -1
-    %}
+    %{ ids.bit_length = -1 %}
     // Computes N=2^bit_length and n=2^(bit_length-1)
     // x is supposed to verify n = 2^(b-1) <= x < N = 2^bit_length <=> x has bit_length bits
 
@@ -86,10 +80,7 @@ func compute_height_pre_alloc_pow2_hack1{range_check_ptr, pow2_array: felt*}(x: 
 func compute_height_pre_alloc_pow2_hack2{range_check_ptr, pow2_array: felt*}(x: felt) -> felt {
     alloc_locals;
     local bit_length;
-    %{
-        x = ids.x
-        ids.bit_length = 2500
-    %}
+    %{ ids.bit_length = 2500 %}
     // Computes N=2^bit_length and n=2^(bit_length-1)
     // x is supposed to verify n = 2^(b-1) <= x < N = 2^bit_length <=> x has bit_length bits
 
