@@ -421,7 +421,7 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         //      print(f"key_nibbles: {ids.key_nibbles}")
         //      print(f"key_leading_zeroes_nibbles: {ids.key_leading_zeroes_nibbles}")
         // %}
-        %{ //TODO
+        %{
             key_hex = ids.key_leading_zeroes_nibbles * '0' + hex(ids.key.low + (2 ** 128) * ids.key.high)[2:]
             expected_nibble = int(key_hex[ids.nibble_index + ids.key_leading_zeroes_nibbles], 16)
         %}

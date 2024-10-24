@@ -41,3 +41,35 @@ pub fn hint_expected_leading_zeroes(
 
     Ok(())
 }
+
+pub const HINT_EXPECTED_NIBBLE: &str = "key_hex = ids.key_leading_zeroes_nibbles * '0' + hex(ids.key.low + (2 ** 128) * ids.key.high)[2:]\nexpected_nibble = int(key_hex[ids.nibble_index + ids.key_leading_zeroes_nibbles], 16)";
+
+pub fn hint_expected_nibble(
+    vm: &mut VirtualMachine,
+    exec_scope: &mut ExecutionScopes,
+    hint_data: &HintProcessorData,
+    _constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    let key_low: u128 = utils::get_value("key.low", vm, hint_data)?
+        .try_into()
+        .unwrap();
+    let key_high: u128 = utils::get_value("key.high", vm, hint_data)?
+        .try_into()
+        .unwrap();
+    let key_leading_zeroes_nibbles: usize =
+        utils::get_value("key_leading_zeroes_nibbles", vm, hint_data)?
+            .try_into()
+            .unwrap();
+    let nibble_index: usize = utils::get_value("nibble_index", vm, hint_data)?
+        .try_into()
+        .unwrap();
+
+    let hex = hex::encode([key_low.to_be_bytes(), key_high.to_be_bytes()].concat());
+    let nibble_char = format!("{:0width$}{}", "", hex, width = key_leading_zeroes_nibbles)
+        .chars()
+        .nth(nibble_index + key_leading_zeroes_nibbles)
+        .unwrap();
+    exec_scope.insert_value("expected_nibble", nibble_char.to_digit(16).unwrap());
+
+    Ok(())
+}
