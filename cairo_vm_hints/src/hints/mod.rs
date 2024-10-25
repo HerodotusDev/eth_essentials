@@ -30,7 +30,7 @@ pub fn run_hint(
     constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     for (hint_str, hint_func) in HINTS {
-        if hint_data.code == hint_str.to_string() {
+        if hint_data.code == *hint_str {
             return hint_func(vm, exec_scope, hint_data, constants);
         }
     }
