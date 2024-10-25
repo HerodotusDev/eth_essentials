@@ -9,11 +9,11 @@ use cairo_vm::Felt252;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-pub const HINT_RLP_BIGINT_SIZE: &str = "memory[ap] = 1 if ids.byte <= 127 else 0";
+const HINT_RLP_BIGINT_SIZE: &str = "memory[ap] = 1 if ids.byte <= 127 else 0";
 
 const FELT_127: Felt252 = Felt252::from_hex_unchecked("0x7F");
 
-pub fn hint_rlp_bigint_size(
+fn hint_rlp_bigint_size(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -29,4 +29,18 @@ pub fn hint_rlp_bigint_size(
     };
 
     Ok(())
+}
+
+pub fn run_hint(
+    vm: &mut VirtualMachine,
+    exec_scope: &mut ExecutionScopes,
+    hint_data: &HintProcessorData,
+    constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    match hint_data.code.as_str() {
+        HINT_RLP_BIGINT_SIZE => hint_rlp_bigint_size(vm, exec_scope, hint_data, constants),
+        _ => Err(HintError::UnknownHint(
+            hint_data.code.to_string().into_boxed_str(),
+        )),
+    }
 }

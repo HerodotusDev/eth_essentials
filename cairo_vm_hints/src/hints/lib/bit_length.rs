@@ -8,9 +8,9 @@ use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
 use std::collections::HashMap;
 
-pub const HINT_BIT_LENGTH: &str = "ids.bit_length = ids.x.bit_length()";
+const HINT_BIT_LENGTH: &str = "ids.bit_length = ids.x.bit_length()";
 
-pub fn hint_bit_length(
+fn hint_bit_length(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -26,4 +26,18 @@ pub fn hint_bit_length(
     )?;
 
     Ok(())
+}
+
+pub fn run_hint(
+    vm: &mut VirtualMachine,
+    exec_scope: &mut ExecutionScopes,
+    hint_data: &HintProcessorData,
+    constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    match hint_data.code.as_str() {
+        HINT_BIT_LENGTH => hint_bit_length(vm, exec_scope, hint_data, constants),
+        _ => Err(HintError::UnknownHint(
+            hint_data.code.to_string().into_boxed_str(),
+        )),
+    }
 }

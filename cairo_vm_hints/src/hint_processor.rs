@@ -1,5 +1,4 @@
-use crate::hints::lib;
-use crate::hints::tests;
+use crate::hints::run_hint;
 use cairo_vm::{
     hint_processor::{
         builtin_hint_processor::builtin_hint_processor_definition::{
@@ -25,65 +24,6 @@ pub struct CustomHintProcessor;
 impl CustomHintProcessor {
     pub fn new() -> Self {
         Self {}
-    }
-}
-
-fn run_hint(
-    vm: &mut VirtualMachine,
-    exec_scope: &mut ExecutionScopes,
-    hint_data: &HintProcessorData,
-    constants: &HashMap<String, Felt252>,
-) -> Result<(), HintError> {
-    match hint_data.code.as_str() {
-        tests::print::HINT_PRINT_BREAKLINE => {
-            tests::print::hint_print_breakline(vm, exec_scope, hint_data, constants)
-        }
-        tests::print::HINT_PRINT_PASS => {
-            tests::print::hint_print_pass(vm, exec_scope, hint_data, constants)
-        }
-        tests::mmr_size_generate::HINT_GENERATE_SEQUENTIAL => {
-            tests::mmr_size_generate::hint_generate_sequential(vm, exec_scope, hint_data, constants)
-        }
-        tests::mmr_size_generate::HINT_GENERATE_RANDOM => {
-            tests::mmr_size_generate::hint_generate_random(vm, exec_scope, hint_data, constants)
-        }
-        lib::bit_length::HINT_BIT_LENGTH => {
-            lib::bit_length::hint_bit_length(vm, exec_scope, hint_data, constants)
-        }
-        tests::dw_hack::HINT_BIT_LENGTH_ASSIGN_140 => {
-            tests::dw_hack::hint_bit_length_assign_140(vm, exec_scope, hint_data, constants)
-        }
-        tests::dw_hack::HINT_BIT_LENGTH_ASSIGN_2500 => {
-            tests::dw_hack::hint_bit_length_assign_2500(vm, exec_scope, hint_data, constants)
-        }
-        tests::dw_hack::HINT_BIT_LENGTH_ASSIGN_NEGATIVE_ONE => {
-            tests::dw_hack::hint_bit_length_assign_negative_one(
-                vm, exec_scope, hint_data, constants,
-            )
-        }
-        tests::dw_hack::HINT_PRINT_NS => {
-            tests::dw_hack::hint_print_ns(vm, exec_scope, hint_data, constants)
-        }
-        tests::encode_packed_256::HINT_GENERATE_TEST_VECTOR => {
-            tests::encode_packed_256::hint_generate_test_vector(
-                vm, exec_scope, hint_data, constants,
-            )
-        }
-        lib::block_header::HINT_RLP_BIGINT_SIZE => {
-            lib::block_header::hint_rlp_bigint_size(vm, exec_scope, hint_data, constants)
-        }
-        lib::mmr::bit_length::MMR_BIT_LENGTH => {
-            lib::mmr::bit_length::mmr_bit_length(vm, exec_scope, hint_data, constants)
-        }
-        tests::construct_mmr::TEST_CONSTRUCT_MMR => {
-            tests::construct_mmr::test_construct_mmr(vm, exec_scope, hint_data, constants)
-        }
-        lib::mmr::left_child::MMR_LEFT_CHILD => {
-            lib::mmr::left_child::mmr_left_child(vm, exec_scope, hint_data, constants)
-        }
-        _ => Err(HintError::UnknownHint(
-            hint_data.code.to_string().into_boxed_str(),
-        )),
     }
 }
 

@@ -44,9 +44,9 @@ use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
 use std::collections::HashMap;
 
-pub const HINT_LONG_SHORT_LIST: &str = "from tools.py.hints import is_short_list, is_long_list\nif is_short_list(ids.list_prefix):\n    ids.long_short_list = 0\nelif is_long_list(ids.list_prefix):\n    ids.long_short_list = 1\nelse:\n    raise ValueError(f\"Invalid list prefix: {hex(ids.list_prefix)}. Not a recognized list type.\")";
+const HINT_LONG_SHORT_LIST: &str = "from tools.py.hints import is_short_list, is_long_list\nif is_short_list(ids.list_prefix):\n    ids.long_short_list = 0\nelif is_long_list(ids.list_prefix):\n    ids.long_short_list = 1\nelse:\n    raise ValueError(f\"Invalid list prefix: {hex(ids.list_prefix)}. Not a recognized list type.\")";
 
-pub fn hint_long_short_list(
+fn hint_long_short_list(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -82,9 +82,9 @@ pub fn hint_long_short_list(
     }
 }
 
-pub const HINT_FIRST_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.first_item_prefix):\n    ids.first_item_type = 0\nelif is_short_string(ids.first_item_prefix):\n    ids.first_item_type = 1\nelse:\n    raise ValueError(f\"Unsupported first item prefix: {hex(ids.first_item_prefix)}.\")";
+const HINT_FIRST_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.first_item_prefix):\n    ids.first_item_type = 0\nelif is_short_string(ids.first_item_prefix):\n    ids.first_item_type = 1\nelse:\n    raise ValueError(f\"Unsupported first item prefix: {hex(ids.first_item_prefix)}.\")";
 
-pub fn hint_first_item_type(
+fn hint_first_item_type(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -120,9 +120,9 @@ pub fn hint_first_item_type(
     }
 }
 
-pub const HINT_SECOND_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string, is_long_string\nif is_single_byte(ids.second_item_prefix):\n    ids.second_item_type = 0\nelif is_short_string(ids.second_item_prefix):\n    ids.second_item_type = 1\nelif is_long_string(ids.second_item_prefix):\n    ids.second_item_type = 2\nelse:\n    raise ValueError(f\"Unsupported second item prefix: {hex(ids.second_item_prefix)}.\")";
+const HINT_SECOND_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string, is_long_string\nif is_single_byte(ids.second_item_prefix):\n    ids.second_item_type = 0\nelif is_short_string(ids.second_item_prefix):\n    ids.second_item_type = 1\nelif is_long_string(ids.second_item_prefix):\n    ids.second_item_type = 2\nelse:\n    raise ValueError(f\"Unsupported second item prefix: {hex(ids.second_item_prefix)}.\")";
 
-pub fn hint_second_item_type(
+fn hint_second_item_type(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -165,9 +165,9 @@ pub fn hint_second_item_type(
     }
 }
 
-pub const HINT_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.item_prefix):\n    ids.item_type = 0\nelif is_short_string(ids.item_prefix):\n    ids.item_type = 1\nelse:\n    raise ValueError(f\"Unsupported item prefix: {hex(ids.item_prefix)} for a branch node. Should be single byte or short string only.\")";
+const HINT_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.item_prefix):\n    ids.item_type = 0\nelif is_short_string(ids.item_prefix):\n    ids.item_type = 1\nelse:\n    raise ValueError(f\"Unsupported item prefix: {hex(ids.item_prefix)} for a branch node. Should be single byte or short string only.\")";
 
-pub fn hint_item_type(
+fn hint_item_type(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -200,5 +200,22 @@ pub fn hint_item_type(
             value,
             Felt252::ZERO,
         )))),
+    }
+}
+
+pub fn run_hint(
+    vm: &mut VirtualMachine,
+    exec_scope: &mut ExecutionScopes,
+    hint_data: &HintProcessorData,
+    constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    match hint_data.code.as_str() {
+        HINT_LONG_SHORT_LIST => hint_long_short_list(vm, exec_scope, hint_data, constants),
+        HINT_FIRST_ITEM_TYPE => hint_first_item_type(vm, exec_scope, hint_data, constants),
+        HINT_SECOND_ITEM_TYPE => hint_second_item_type(vm, exec_scope, hint_data, constants),
+        HINT_ITEM_TYPE => hint_item_type(vm, exec_scope, hint_data, constants),
+        _ => Err(HintError::UnknownHint(
+            hint_data.code.to_string().into_boxed_str(),
+        )),
     }
 }
