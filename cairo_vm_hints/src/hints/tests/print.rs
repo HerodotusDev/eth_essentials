@@ -1,12 +1,14 @@
+use crate::hints::{Hint, HINTS};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
+use linkme::distributed_slice;
 use std::collections::HashMap;
 
-pub const HINT_PRINT_BREAKLINE: &str = "print('\\n')";
+const HINT_PRINT_BREAKLINE: &str = "print('\\n')";
 
-pub fn hint_print_breakline(
+fn hint_print_breakline(
     _vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     _hint_data: &HintProcessorData,
@@ -16,9 +18,12 @@ pub fn hint_print_breakline(
     Ok(())
 }
 
-pub const HINT_PRINT_PASS: &str = "print(f\"\\tPass!\\n\\n\")";
+#[distributed_slice(HINTS)]
+static _HINT_PRINT_BREAKLINE: Hint = (HINT_PRINT_BREAKLINE, hint_print_breakline);
 
-pub fn hint_print_pass(
+const HINT_PRINT_PASS: &str = "print(f\"\\tPass!\\n\\n\")";
+
+fn hint_print_pass(
     _vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     _hint_data: &HintProcessorData,
@@ -27,3 +32,6 @@ pub fn hint_print_pass(
     println!("\tPass!\n\n");
     Ok(())
 }
+
+#[distributed_slice(HINTS)]
+static _HINT_PRINT_PASS: Hint = (HINT_PRINT_PASS, hint_print_pass);

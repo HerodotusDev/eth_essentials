@@ -1,3 +1,4 @@
+use crate::hints::{Hint, HINTS};
 use crate::mmr::{Keccak, Mmr, Poseidon};
 use crate::utils::{split_u256, write_struct, write_value, write_vector};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
@@ -5,12 +6,13 @@ use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
+use linkme::distributed_slice;
 use num_bigint::{BigUint, RandBigInt};
 use num_traits::{Num, One};
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 
-pub const TEST_CONSTRUCT_MMR: &str = "import random
+const TEST_CONSTRUCT_MMR: &str = "import random
 from tools.py.mmr import get_peaks, MMR, PoseidonHasher, KeccakHasher
 STARK_PRIME = 3618502788666131213697322783095070105623107215331596699973092056135872020481
 
@@ -76,7 +78,7 @@ ids.expected_new_root_poseidon = mmr_poseidon.get_root()
 ids.expected_new_root_keccak.low, ids.expected_new_root_keccak.high = split_128(mmr_keccak.get_root())
 ids.expected_new_len = len(mmr_poseidon.pos_hash)";
 
-pub fn test_construct_mmr(
+fn test_construct_mmr(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -203,3 +205,6 @@ pub fn test_construct_mmr(
 
     Ok(())
 }
+
+#[distributed_slice(HINTS)]
+static _TEST_CONSTRUCT_MMR: Hint = (TEST_CONSTRUCT_MMR, test_construct_mmr);

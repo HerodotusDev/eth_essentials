@@ -1,9 +1,11 @@
+use crate::hints::{Hint, HINTS};
 use crate::utils;
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::insert_value_into_ap;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
+use linkme::distributed_slice;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -11,10 +13,10 @@ const FELT_31: Felt252 = Felt252::from_hex_unchecked("0x1F");
 const FELT_32: Felt252 = Felt252::from_hex_unchecked("0x20");
 const FELT_63: Felt252 = Felt252::from_hex_unchecked("0x3F");
 
-pub const HINT_IS_ZERO: &str =
+const HINT_IS_ZERO: &str =
     "ids.is_zero = 1 if ids.nibble_index <= (ids.key_leading_zeroes_nibbles - 1) else 0";
 
-pub fn hint_is_zero(
+fn hint_is_zero(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -35,10 +37,13 @@ pub fn hint_is_zero(
     )
 }
 
-pub const HINT_NIBBLE_FROM_LOW: &str =
+#[distributed_slice(HINTS)]
+static _HINT_IS_ZERO: Hint = (HINT_IS_ZERO, hint_is_zero);
+
+const HINT_NIBBLE_FROM_LOW: &str =
     "ids.get_nibble_from_low = 1 if (0 <= ids.nibble_index <= 31 and ids.key_nibbles <= 32) or (32 <= ids.nibble_index <= 63 and ids.key_nibbles > 32) else 0";
 
-pub fn hint_nibble_from_low(
+fn hint_nibble_from_low(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -59,10 +64,13 @@ pub fn hint_nibble_from_low(
     utils::write_value("get_nibble_from_low", get_nibble_from_low, vm, hint_data)
 }
 
-pub const HINT_NEEDS_NEXT_WORD: &str =
+#[distributed_slice(HINTS)]
+static _HINT_NIBBLE_FROM_LOW: Hint = (HINT_NIBBLE_FROM_LOW, hint_nibble_from_low);
+
+const HINT_NEEDS_NEXT_WORD: &str =
     "ids.needs_next_word = 1 if ids.n_bytes > ids.avl_bytes_in_word else 0";
 
-pub fn hint_needs_next_word(
+fn hint_needs_next_word(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -80,10 +88,13 @@ pub fn hint_needs_next_word(
     utils::write_value("needs_next_word", needs_next_word, vm, hint_data)
 }
 
-pub const HINT_NEEDS_NEXT_WORD_ENDING: &str =
+#[distributed_slice(HINTS)]
+static _HINT_NEEDS_NEXT_WORD: Hint = (HINT_NEEDS_NEXT_WORD, hint_needs_next_word);
+
+const HINT_NEEDS_NEXT_WORD_ENDING: &str =
     "ids.needs_next_word = 1 if ids.n_ending_bytes > ids.avl_bytes_in_word else 0";
 
-pub fn hint_needs_next_word_ending(
+fn hint_needs_next_word_ending(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -101,10 +112,14 @@ pub fn hint_needs_next_word_ending(
     utils::write_value("needs_next_word", needs_next_word, vm, hint_data)
 }
 
-pub const HINT_WORDS_LOOP: &str =
+#[distributed_slice(HINTS)]
+static _HINT_NEEDS_NEXT_WORD_ENDING: Hint =
+    (HINT_NEEDS_NEXT_WORD_ENDING, hint_needs_next_word_ending);
+
+const HINT_WORDS_LOOP: &str =
     "memory[ap] = 1 if (ids.n_words_to_handle_in_loop - ids.n_words_handled) == 0 else 0";
 
-pub fn hint_words_loop(
+fn hint_words_loop(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -123,3 +138,6 @@ pub fn hint_words_loop(
         },
     )
 }
+
+#[distributed_slice(HINTS)]
+static _HINT_WORDS_LOOP: Hint = (HINT_WORDS_LOOP, hint_words_loop);

@@ -4,10 +4,24 @@ use cairo_vm::{
     vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
     Felt252,
 };
+use linkme::distributed_slice;
 use std::collections::HashMap;
 
 mod lib;
 mod tests;
+
+type Hint = (
+    &'static str,
+    fn(
+        vm: &mut VirtualMachine,
+        exec_scope: &mut ExecutionScopes,
+        hint_data: &HintProcessorData,
+        constants: &HashMap<String, Felt252>,
+    ) -> Result<(), HintError>,
+);
+
+#[distributed_slice]
+pub static HINTS: [Hint];
 
 pub fn run_hint(
     vm: &mut VirtualMachine,
@@ -15,15 +29,10 @@ pub fn run_hint(
     hint_data: &HintProcessorData,
     constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let hints = [lib::run_hint, tests::run_hint];
-
-    for hint in hints.iter() {
-        let res = hint(vm, exec_scope, hint_data, constants);
-        if !matches!(res, Err(HintError::UnknownHint(_))) {
-            return res;
+    for (hint_str, hint_func) in HINTS {
+        if hint_data.code == hint_str.to_string() {
+            return hint_func(vm, exec_scope, hint_data, constants);
         }
     }
-    Err(HintError::UnknownHint(
-        hint_data.code.to_string().into_boxed_str(),
-    ))
+    Err(HintError::UnknownHint(hint_data.code.as_str().into()))
 }

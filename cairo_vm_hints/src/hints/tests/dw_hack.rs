@@ -1,14 +1,16 @@
+use crate::hints::{Hint, HINTS};
 use crate::utils::{get_value, write_value};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
+use linkme::distributed_slice;
 use std::collections::HashMap;
 
-pub const HINT_BIT_LENGTH_ASSIGN_140: &str = "ids.bit_length = 140";
+const HINT_BIT_LENGTH_ASSIGN_140: &str = "ids.bit_length = 140";
 
-pub fn hint_bit_length_assign_140(
+fn hint_bit_length_assign_140(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -24,9 +26,12 @@ pub fn hint_bit_length_assign_140(
     Ok(())
 }
 
-pub const HINT_BIT_LENGTH_ASSIGN_NEGATIVE_ONE: &str = "ids.bit_length = -1";
+#[distributed_slice(HINTS)]
+static _HINT_BIT_LENGTH_ASSIGN_140: Hint = (HINT_BIT_LENGTH_ASSIGN_140, hint_bit_length_assign_140);
 
-pub fn hint_bit_length_assign_negative_one(
+const HINT_BIT_LENGTH_ASSIGN_NEGATIVE_ONE: &str = "ids.bit_length = -1";
+
+fn hint_bit_length_assign_negative_one(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -42,9 +47,15 @@ pub fn hint_bit_length_assign_negative_one(
     Ok(())
 }
 
-pub const HINT_BIT_LENGTH_ASSIGN_2500: &str = "ids.bit_length = 2500";
+#[distributed_slice(HINTS)]
+static _HINT_BIT_LENGTH_ASSIGN_NEGATIVE_ONE: Hint = (
+    HINT_BIT_LENGTH_ASSIGN_NEGATIVE_ONE,
+    hint_bit_length_assign_negative_one,
+);
 
-pub fn hint_bit_length_assign_2500(
+const HINT_BIT_LENGTH_ASSIGN_2500: &str = "ids.bit_length = 2500";
+
+fn hint_bit_length_assign_2500(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -60,9 +71,13 @@ pub fn hint_bit_length_assign_2500(
     Ok(())
 }
 
-pub const HINT_PRINT_NS: &str = "print(\"N\", ids.N, \"n\", ids.n)";
+#[distributed_slice(HINTS)]
+static _HINT_BIT_LENGTH_ASSIGN_2500: Hint =
+    (HINT_BIT_LENGTH_ASSIGN_2500, hint_bit_length_assign_2500);
 
-pub fn hint_print_ns(
+const HINT_PRINT_NS: &str = "print(\"N\", ids.N, \"n\", ids.n)";
+
+fn hint_print_ns(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -75,3 +90,6 @@ pub fn hint_print_ns(
     );
     Ok(())
 }
+
+#[distributed_slice(HINTS)]
+static _HINT_PRINT_NS: Hint = (HINT_PRINT_NS, hint_print_ns);

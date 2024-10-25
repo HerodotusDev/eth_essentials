@@ -1,8 +1,10 @@
+use crate::hints::{Hint, HINTS};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
+use linkme::distributed_slice;
 use rand::{thread_rng, Rng};
 use starknet_types_core::felt::Felt;
 use std::collections::{HashMap, HashSet};
@@ -23,9 +25,9 @@ fn is_valid_mmr_size(mut mmr_size: u64) -> bool {
     mmr_size == 0
 }
 
-pub const HINT_GENERATE_RANDOM: &str = "from tools.py.mmr import is_valid_mmr_size\nimport random\nprint(f\"Testing is_valid_mmr_size against python implementation with {ids.num_sizes} random sizes in [0, 20000000)...\")\nsizes_to_test = random.sample(range(0, 20000000), ids.num_sizes)\nexpected_output = [is_valid_mmr_size(size) for size in sizes_to_test]\nsegments.write_arg(ids.expected_output, expected_output)\nsegments.write_arg(ids.input_array, sizes_to_test)";
+const HINT_GENERATE_RANDOM: &str = "from tools.py.mmr import is_valid_mmr_size\nimport random\nprint(f\"Testing is_valid_mmr_size against python implementation with {ids.num_sizes} random sizes in [0, 20000000)...\")\nsizes_to_test = random.sample(range(0, 20000000), ids.num_sizes)\nexpected_output = [is_valid_mmr_size(size) for size in sizes_to_test]\nsegments.write_arg(ids.expected_output, expected_output)\nsegments.write_arg(ids.input_array, sizes_to_test)";
 
-pub fn hint_generate_random(
+fn hint_generate_random(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -58,9 +60,12 @@ pub fn hint_generate_random(
     Ok(())
 }
 
-pub const HINT_GENERATE_SEQUENTIAL: &str = "print(f\"Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {ids.num_elems})...\")\nfrom tools.py.mmr import MMR\nmmr = MMR()\nvalid_mmr_sizes =set()\nfor i in range(ids.num_elems):\n    mmr.add(i)\n    valid_mmr_sizes.add(len(mmr.pos_hash))\n\nexpected_output = [size in valid_mmr_sizes for size in range(0, len(mmr.pos_hash) + 1)]\nsegments.write_arg(ids.expected_output, expected_output)\nsegments.write_arg(ids.input_array, list(range(0, len(mmr.pos_hash) + 1)))";
+#[distributed_slice(HINTS)]
+static _HINT_GENERATE_RANDOM: Hint = (HINT_GENERATE_RANDOM, hint_generate_random);
 
-pub fn hint_generate_sequential(
+const HINT_GENERATE_SEQUENTIAL: &str = "print(f\"Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {ids.num_elems})...\")\nfrom tools.py.mmr import MMR\nmmr = MMR()\nvalid_mmr_sizes =set()\nfor i in range(ids.num_elems):\n    mmr.add(i)\n    valid_mmr_sizes.add(len(mmr.pos_hash))\n\nexpected_output = [size in valid_mmr_sizes for size in range(0, len(mmr.pos_hash) + 1)]\nsegments.write_arg(ids.expected_output, expected_output)\nsegments.write_arg(ids.input_array, list(range(0, len(mmr.pos_hash) + 1)))";
+
+fn hint_generate_sequential(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -95,3 +100,6 @@ pub fn hint_generate_sequential(
 
     Ok(())
 }
+
+#[distributed_slice(HINTS)]
+static _HINT_GENERATE_SEQUENTIAL: Hint = (HINT_GENERATE_SEQUENTIAL, hint_generate_sequential);

@@ -34,6 +34,7 @@ fn is_long_list(value: Felt252) -> bool {
     FELT_248 <= value && value <= FELT_255
 }
 
+use crate::hints::{Hint, HINTS};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
     get_integer_from_var_name, insert_value_from_var_name,
@@ -42,6 +43,7 @@ use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
+use linkme::distributed_slice;
 use std::collections::HashMap;
 
 const HINT_LONG_SHORT_LIST: &str = "from tools.py.hints import is_short_list, is_long_list\nif is_short_list(ids.list_prefix):\n    ids.long_short_list = 0\nelif is_long_list(ids.list_prefix):\n    ids.long_short_list = 1\nelse:\n    raise ValueError(f\"Invalid list prefix: {hex(ids.list_prefix)}. Not a recognized list type.\")";
@@ -81,6 +83,8 @@ fn hint_long_short_list(
         )))),
     }
 }
+#[distributed_slice(HINTS)]
+static _HIT_LONG_SHORT_LIST: Hint = (HINT_LONG_SHORT_LIST, hint_long_short_list);
 
 const HINT_FIRST_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.first_item_prefix):\n    ids.first_item_type = 0\nelif is_short_string(ids.first_item_prefix):\n    ids.first_item_type = 1\nelse:\n    raise ValueError(f\"Unsupported first item prefix: {hex(ids.first_item_prefix)}.\")";
 
@@ -119,6 +123,9 @@ fn hint_first_item_type(
         )))),
     }
 }
+
+#[distributed_slice(HINTS)]
+static _HINT_FIRST_ITEM_TYPE: Hint = (HINT_FIRST_ITEM_TYPE, hint_first_item_type);
 
 const HINT_SECOND_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string, is_long_string\nif is_single_byte(ids.second_item_prefix):\n    ids.second_item_type = 0\nelif is_short_string(ids.second_item_prefix):\n    ids.second_item_type = 1\nelif is_long_string(ids.second_item_prefix):\n    ids.second_item_type = 2\nelse:\n    raise ValueError(f\"Unsupported second item prefix: {hex(ids.second_item_prefix)}.\")";
 
@@ -165,6 +172,9 @@ fn hint_second_item_type(
     }
 }
 
+#[distributed_slice(HINTS)]
+static _HINT_SECOND_ITEM_TYPE: Hint = (HINT_SECOND_ITEM_TYPE, hint_second_item_type);
+
 const HINT_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.item_prefix):\n    ids.item_type = 0\nelif is_short_string(ids.item_prefix):\n    ids.item_type = 1\nelse:\n    raise ValueError(f\"Unsupported item prefix: {hex(ids.item_prefix)} for a branch node. Should be single byte or short string only.\")";
 
 fn hint_item_type(
@@ -203,19 +213,5 @@ fn hint_item_type(
     }
 }
 
-pub fn run_hint(
-    vm: &mut VirtualMachine,
-    exec_scope: &mut ExecutionScopes,
-    hint_data: &HintProcessorData,
-    constants: &HashMap<String, Felt252>,
-) -> Result<(), HintError> {
-    match hint_data.code.as_str() {
-        HINT_LONG_SHORT_LIST => hint_long_short_list(vm, exec_scope, hint_data, constants),
-        HINT_FIRST_ITEM_TYPE => hint_first_item_type(vm, exec_scope, hint_data, constants),
-        HINT_SECOND_ITEM_TYPE => hint_second_item_type(vm, exec_scope, hint_data, constants),
-        HINT_ITEM_TYPE => hint_item_type(vm, exec_scope, hint_data, constants),
-        _ => Err(HintError::UnknownHint(
-            hint_data.code.to_string().into_boxed_str(),
-        )),
-    }
-}
+#[distributed_slice(HINTS)]
+static _HINT_ITEM_TYPE: Hint = (HINT_ITEM_TYPE, hint_item_type);

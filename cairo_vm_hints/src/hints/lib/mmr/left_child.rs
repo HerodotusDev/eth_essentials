@@ -1,3 +1,4 @@
+use crate::hints::{Hint, HINTS};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
     get_integer_from_var_name, insert_value_from_var_name,
@@ -6,12 +7,13 @@ use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
+use linkme::distributed_slice;
 use starknet_types_core::felt::Felt;
 use std::collections::HashMap;
 
-pub const MMR_LEFT_CHILD: &str = "ids.in_mmr = 1 if ids.left_child<=ids.mmr_len else 0";
+const MMR_LEFT_CHILD: &str = "ids.in_mmr = 1 if ids.left_child<=ids.mmr_len else 0";
 
-pub fn mmr_left_child(
+fn mmr_left_child(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -41,3 +43,6 @@ pub fn mmr_left_child(
 
     Ok(())
 }
+
+#[distributed_slice(HINTS)]
+static _MMR_LEFT_CHILD: Hint = (MMR_LEFT_CHILD, mmr_left_child);

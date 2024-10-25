@@ -17,3 +17,4 @@ num-traits = "0.2.19"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 hex = "0.4.3"
 starknet-crypto = "0.7.2"
+linkme = "0.3.29"

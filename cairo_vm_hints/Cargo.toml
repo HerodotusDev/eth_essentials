@@ -16,3 +16,4 @@ num-traits.workspace = true
 tiny-keccak.workspace = true
 hex.workspace = true
 starknet-crypto.workspace = true
+linkme.workspace = true
