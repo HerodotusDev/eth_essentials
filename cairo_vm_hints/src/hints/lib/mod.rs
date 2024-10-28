@@ -6,8 +6,12 @@ use cairo_vm::{
 };
 use std::collections::HashMap;
 
-mod lib;
-mod tests;
+mod bit_length;
+mod block_header;
+mod mmr;
+mod mpt;
+mod rlp_little;
+mod utils;
 
 pub fn run_hint(
     vm: &mut VirtualMachine,
@@ -15,7 +19,14 @@ pub fn run_hint(
     hint_data: &HintProcessorData,
     constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let hints = [lib::run_hint, tests::run_hint];
+    let hints = [
+        bit_length::run_hint,
+        block_header::run_hint,
+        mmr::run_hint,
+        mpt::run_hint,
+        rlp_little::run_hint,
+        utils::run_hint,
+    ];
 
     for hint in hints.iter() {
         let res = hint(vm, exec_scope, hint_data, constants);

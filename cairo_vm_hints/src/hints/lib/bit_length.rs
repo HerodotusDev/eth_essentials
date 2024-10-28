@@ -6,38 +6,38 @@ use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
-use starknet_types_core::felt::Felt;
 use std::collections::HashMap;
 
-pub const MMR_LEFT_CHILD: &str = "ids.in_mmr = 1 if ids.left_child<=ids.mmr_len else 0";
+const HINT_BIT_LENGTH: &str = "ids.bit_length = ids.x.bit_length()";
 
-pub fn mmr_left_child(
+fn hint_bit_length(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let left_child = get_integer_from_var_name(
-        "left_child",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
-    let mmr_len =
-        get_integer_from_var_name("mmr_len", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
-
-    let in_mmr = if left_child <= mmr_len {
-        Felt::ONE
-    } else {
-        Felt::ZERO
-    };
+    let x = get_integer_from_var_name("x", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
     insert_value_from_var_name(
-        "in_mmr",
-        MaybeRelocatable::Int(in_mmr),
+        "bit_length",
+        MaybeRelocatable::Int(x.bits().into()),
         vm,
         &hint_data.ids_data,
         &hint_data.ap_tracking,
     )?;
 
     Ok(())
+}
+
+pub fn run_hint(
+    vm: &mut VirtualMachine,
+    exec_scope: &mut ExecutionScopes,
+    hint_data: &HintProcessorData,
+    constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    match hint_data.code.as_str() {
+        HINT_BIT_LENGTH => hint_bit_length(vm, exec_scope, hint_data, constants),
+        _ => Err(HintError::UnknownHint(
+            hint_data.code.to_string().into_boxed_str(),
+        )),
+    }
 }

@@ -1,17 +1,18 @@
 [package]
-name = "cairo_vm_hints"
+name = "eth_essentials_cairo_vm_hints"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm", rev = "3fb0344ce038b3a68cae897c403d1f561cfe8da7", features = ["extensive_hints", "clap", "std"] }
-starknet-types-core = "0.1.7"
-thiserror = "1.0.64"
-clap = { version = "4.3.10", features = ["derive"] }
-bincode = { version = "2.0.0-rc.3", default-features = false, features = ["serde"] }
-rand = "0.8"
-num-bigint = "0.4.6"
-num-traits = "0.2.19"
-tiny-keccak = { version = "2.0.2", features = ["keccak"] }
-hex = "0.4.3"
-starknet-crypto = "0.7.2"
+bincode.workspace = true
+cairo-vm.workspace = true
+clap.workspace = true
+rand.workspace = true
+sha3.workspace = true
+starknet-types-core.workspace = true
+thiserror.workspace = true
+num-bigint.workspace = true
+num-traits.workspace = true
+tiny-keccak.workspace = true
+hex.workspace = true
+starknet-crypto.workspace = true
