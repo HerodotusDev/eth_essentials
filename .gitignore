@@ -31,3 +31,5 @@ solidity-verifier/lib/*
 *.log
 
 !tests/fuzzing/fixtures/*.json
+
+target

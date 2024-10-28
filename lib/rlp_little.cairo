@@ -49,18 +49,8 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
     alloc_locals;
     %{
         from tools.py.utils import parse_int_to_bytes, count_leading_zero_nibbles_from_hex
-        input_ = ids.x.low + 2**128*ids.x.high
-        input_bytes = parse_int_to_bytes(input_)
-        #print(f"input hex {input_bytes.hex()}")
-        reversed_bytes = input_bytes[::-1]
-        #print("reversed bytes", reversed_bytes)
-        reversed_hex = reversed_bytes.hex()
-        #print("reversed hex", reversed_hex)
-        if ids.cut_nibble == 1:
-            reversed_hex = reversed_hex[1:]
-        #print(f"Reversed hex final : {reversed_hex}")
-        expected_leading_zeroes = count_leading_zero_nibbles_from_hex(reversed_hex)
-        #print(f"Expected leading zeroes {expected_leading_zeroes}")
+        reversed_hex = parse_int_to_bytes(ids.x.low + (2 ** 128) * ids.x.high)[::-1].hex()
+        expected_leading_zeroes = count_leading_zero_nibbles_from_hex(reversed_hex[1:] if ids.cut_nibble == 1 else reversed_hex)
     %}
     local x_f: Uint256;
     local first_nibble_is_zero;
@@ -424,18 +414,16 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         // Consenquently, we get the nibble from high part of the key only if :
         // - nibble_index is in [0, 31] and key_nibbles > 32
         %{ ids.get_nibble_from_low = 1 if (0 <= ids.nibble_index <= 31 and ids.key_nibbles <= 32) or (32 <= ids.nibble_index <= 63 and ids.key_nibbles > 32) else 0 %}
-        if (key.high != 0) {
-            // key_nibbles > 32
-        }
+        // %{
+        //      print(f"Key low: {hex(ids.key.low)}")
+        //      print(f"Key high: {hex(ids.key.high)}")
+        //      print(f"nibble_index: {ids.nibble_index}")
+        //      print(f"key_nibbles: {ids.key_nibbles}")
+        //      print(f"key_leading_zeroes_nibbles: {ids.key_leading_zeroes_nibbles}")
+        // %}
         %{
-            #print(f"Key low: {hex(ids.key.low)}")
-            #print(f"Key high: {hex(ids.key.high)}")
-            #print(f"nibble_index: {ids.nibble_index}")
-            #print(f"key_nibbles: {ids.key_nibbles}")
-            #print(f"key_leading_zeroes_nibbles: {ids.key_leading_zeroes_nibbles}")
-            key_hex = ids.key_leading_zeroes_nibbles*'0'+hex(ids.key.low + 2**128*ids.key.high)[2:]
-            #print(f"Key hex: {key_hex}")
-            expected_nibble = int(key_hex[ids.nibble_index+ids.key_leading_zeroes_nibbles], 16)
+            key_hex = ids.key_leading_zeroes_nibbles * '0' + hex(ids.key.low + (2 ** 128) * ids.key.high)[2:]
+            expected_nibble = int(key_hex[ids.nibble_index + ids.key_leading_zeroes_nibbles], 16)
         %}
         if (get_nibble_from_low != 0) {
             local offset;
@@ -572,15 +560,15 @@ func extract_n_bytes_from_le_64_chunks_array{range_check_ptr}(
 
     if (n_words == 1) {
         local needs_next_word: felt;
-        local avl_bytes_in_first_word = 8 - start_offset;
-        %{ ids.needs_next_word = 1 if ids.n_bytes > ids.avl_bytes_in_first_word else 0 %}
+        local avl_bytes_in_word = 8 - start_offset;
+        %{ ids.needs_next_word = 1 if ids.n_bytes > ids.avl_bytes_in_word else 0 %}
         if (needs_next_word == 0) {
             // %{ print(f"current_word={hex(ids.current_word)}") %}
             let (_, last_word) = felt_divmod(current_word, pow2_array[8 * n_ending_bytes]);
             assert res[0] = last_word;
             return (res, 1);
         } else {
-            // %{ print(f"needs next word, avl_bytes_in_first_word={ids.avl_bytes_in_first_word}") %}
+            // %{ print(f"needs next word, avl_bytes_in_word={ids.avl_bytes_in_word}") %}
             // %{ print(f"current_word={hex(ids.current_word)}") %}
 
             let (_, last_word) = felt_divmod(
@@ -619,10 +607,10 @@ func extract_n_bytes_from_le_64_chunks_array{range_check_ptr}(
     // Inlined felt_divmod (unsigned_div_rem).
     let q = [ap];
     let r = [ap + 1];
-    %{
-        ids.q, ids.r = divmod(memory[ids.array + ids.start_word + ids.i], ids.pow_cut)
-        #print(f"val={memory[ids.array + ids.start_word + ids.i]} q={ids.q} r={ids.r}")
-    %}
+    %{ ids.q, ids.r = divmod(memory[ids.array + ids.start_word + ids.i], ids.pow_cut) %}
+    // %{
+    //     print(f"val={memory[ids.array + ids.start_word + ids.i]} q={ids.q} r={ids.r}")
+    // %}
     ap += 2;
     tempvar offset = 3 * n_words_handled;
     assert [range_check_ptr + offset] = q;
