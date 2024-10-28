@@ -1,5 +1,5 @@
 [package]
-name = "cairo_vm_hints"
+name = "eth_essentials_cairo_vm_hints"
 version = "0.1.0"
 edition = "2021"
 

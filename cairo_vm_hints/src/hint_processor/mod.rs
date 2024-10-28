@@ -1,4 +1,4 @@
-use crate::hints::run_hint;
+use crate::hints;
 use cairo_vm::{
     hint_processor::{
         builtin_hint_processor::builtin_hint_processor_definition::{
@@ -39,7 +39,7 @@ impl HintProcessorLogic for CustomHintProcessor {
             .downcast_ref::<HintProcessorData>()
             .ok_or(HintError::WrongHintData)?;
 
-        run_hint(vm, exec_scopes, hint_data, constants)
+        hints::run_hint(vm, exec_scopes, hint_data, constants)
     }
 }
 
