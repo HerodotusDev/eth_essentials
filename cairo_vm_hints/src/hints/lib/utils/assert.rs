@@ -9,12 +9,12 @@ use std::collections::HashMap;
 pub const HINT_ASSERT_INTEGER_DIV32: &str = "from starkware.cairo.common.math_utils import assert_integer\nassert_integer(ids.DIV_32)\nif not (0 < ids.DIV_32 <= PRIME):\n    raise ValueError(f'div={hex(ids.DIV_32)} is out of the valid range.')";
 
 pub fn hint_assert_integer_div32(
-    vm: &mut VirtualMachine,
+    _vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
-    hint_data: &HintProcessorData,
+    _hint_data: &HintProcessorData,
     constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let div_32: Felt252 = utils::get_value("DIV_32", vm, hint_data)?;
+    let div_32: Felt252 = *get_constant_from_var_name("DIV_32", constants)?;
     let prime: Felt252 = *get_constant_from_var_name("PRIME", constants)?;
 
     if Felt252::ZERO < div_32 && div_32 <= prime {

@@ -9,31 +9,32 @@ use cairo_vm::Felt252;
 use starknet_types_core::felt::Felt;
 use std::collections::HashMap;
 
-pub const MMR_LEFT_CHILD: &str = "ids.in_mmr = 1 if ids.left_child <= ids.mmr_len else 0";
+pub const HINT_IS_POSITION_IN_MMR_ARRAY: &str =
+    "ids.is_position_in_mmr_array= 1 if ids.position > ids.mmr_offset else 0";
 
-pub fn mmr_left_child(
+pub fn hint_is_position_in_mmr_array(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let left_child = get_integer_from_var_name(
-        "left_child",
+    let position =
+        get_integer_from_var_name("position", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
+    let mmr_offset = get_integer_from_var_name(
+        "mmr_offset",
         vm,
         &hint_data.ids_data,
         &hint_data.ap_tracking,
     )?;
-    let mmr_len =
-        get_integer_from_var_name("mmr_len", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
 
-    let in_mmr = if left_child <= mmr_len {
+    let is_position_in_mmr_array = if position > mmr_offset {
         Felt::ONE
     } else {
         Felt::ZERO
     };
     insert_value_from_var_name(
-        "in_mmr",
-        MaybeRelocatable::Int(in_mmr),
+        "is_position_in_mmr_array",
+        MaybeRelocatable::Int(is_position_in_mmr_array),
         vm,
         &hint_data.ids_data,
         &hint_data.ap_tracking,

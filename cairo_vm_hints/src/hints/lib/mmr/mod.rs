@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 mod bit_length;
 mod left_child;
+mod peak_values;
 
 pub fn run_hint(
     vm: &mut VirtualMachine,
@@ -21,6 +22,9 @@ pub fn run_hint(
         }
         left_child::MMR_LEFT_CHILD => {
             left_child::mmr_left_child(vm, exec_scope, hint_data, constants)
+        }
+        peak_values::HINT_IS_POSITION_IN_MMR_ARRAY => {
+            peak_values::hint_is_position_in_mmr_array(vm, exec_scope, hint_data, constants)
         }
         _ => Err(HintError::UnknownHint(
             hint_data.code.to_string().into_boxed_str(),

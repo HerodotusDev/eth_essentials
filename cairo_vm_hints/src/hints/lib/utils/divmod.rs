@@ -1,5 +1,6 @@
 use crate::utils;
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_constant_from_var_name;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
@@ -14,10 +15,10 @@ pub fn hint_value_div32(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
-    _constants: &HashMap<String, Felt252>,
+    constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     let value: Felt252 = utils::get_value("value", vm, hint_data)?;
-    let div_32: Felt252 = utils::get_value("DIV_32", vm, hint_data)?;
+    let div_32: Felt252 = *get_constant_from_var_name("DIV_32", constants)?;
 
     let (q, r) = value.div_rem(&NonZeroFelt::try_from(div_32).unwrap());
     utils::write_value("q", q, vm, hint_data)?;
