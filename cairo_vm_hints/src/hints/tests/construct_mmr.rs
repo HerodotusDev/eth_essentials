@@ -82,16 +82,8 @@ pub fn test_construct_mmr(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let stark_prime = BigUint::from_str_radix(
-        "3618502788666131213697322783095070105623107215331596699973092056135872020481",
-        10,
-    )
-    .unwrap();
-    let two_pow_256 = BigUint::from_str_radix(
-        "115792089237316195423570985008687907853269984665640564039457584007913129639936",
-        10,
-    )
-    .unwrap();
+    let stark_prime = BigUint::from_str_radix("3618502788666131213697322783095070105623107215331596699973092056135872020481", 10).unwrap();
+    let two_pow_256 = BigUint::from_str_radix("115792089237316195423570985008687907853269984665640564039457584007913129639936", 10).unwrap();
 
     let mut rng = thread_rng();
 
@@ -108,10 +100,7 @@ pub fn test_construct_mmr(
 
     write_vector(
         "poseidon_hash_array",
-        &poseidon_hash_array
-            .iter()
-            .map(|x| MaybeRelocatable::Int(x.into()))
-            .collect::<Vec<_>>(),
+        &poseidon_hash_array.iter().map(|x| MaybeRelocatable::Int(x.into())).collect::<Vec<_>>(),
         vm,
         hint_data,
     )?;

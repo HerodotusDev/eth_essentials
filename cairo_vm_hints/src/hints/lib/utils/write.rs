@@ -16,14 +16,7 @@ pub fn hint_write_2(
 ) -> Result<(), HintError> {
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
-    for (idx, byte) in word
-        .to_bytes_be()
-        .into_iter()
-        .rev()
-        .take(2)
-        .rev()
-        .enumerate()
-    {
+    for (idx, byte) in word.to_bytes_be().into_iter().rev().take(2).rev().enumerate() {
         println!("2 {}", byte);
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
@@ -42,14 +35,7 @@ pub fn hint_write_3(
 ) -> Result<(), HintError> {
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
-    for (idx, byte) in word
-        .to_bytes_be()
-        .into_iter()
-        .rev()
-        .take(3)
-        .rev()
-        .enumerate()
-    {
+    for (idx, byte) in word.to_bytes_be().into_iter().rev().take(3).rev().enumerate() {
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
     }
@@ -67,14 +53,7 @@ pub fn hint_write_4(
 ) -> Result<(), HintError> {
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
-    for (idx, byte) in word
-        .to_bytes_be()
-        .into_iter()
-        .rev()
-        .take(4)
-        .rev()
-        .enumerate()
-    {
+    for (idx, byte) in word.to_bytes_be().into_iter().rev().take(4).rev().enumerate() {
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
     }
@@ -92,14 +71,7 @@ pub fn hint_write_5(
 ) -> Result<(), HintError> {
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
-    for (idx, byte) in word
-        .to_bytes_be()
-        .into_iter()
-        .rev()
-        .take(5)
-        .rev()
-        .enumerate()
-    {
+    for (idx, byte) in word.to_bytes_be().into_iter().rev().take(5).rev().enumerate() {
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
     }
@@ -117,14 +89,7 @@ pub fn hint_write_6(
 ) -> Result<(), HintError> {
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
-    for (idx, byte) in word
-        .to_bytes_be()
-        .into_iter()
-        .rev()
-        .take(6)
-        .rev()
-        .enumerate()
-    {
+    for (idx, byte) in word.to_bytes_be().into_iter().rev().take(6).rev().enumerate() {
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
     }
@@ -142,14 +107,7 @@ pub fn hint_write_7(
 ) -> Result<(), HintError> {
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
-    for (idx, byte) in word
-        .to_bytes_be()
-        .into_iter()
-        .rev()
-        .take(7)
-        .rev()
-        .enumerate()
-    {
+    for (idx, byte) in word.to_bytes_be().into_iter().rev().take(7).rev().enumerate() {
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
     }

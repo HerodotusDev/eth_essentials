@@ -6,8 +6,8 @@ use cairo_vm::{
 };
 use std::collections::HashMap;
 
-mod lib;
-mod tests;
+pub mod lib;
+pub mod tests;
 
 pub fn run_hint(
     vm: &mut VirtualMachine,
@@ -23,7 +23,5 @@ pub fn run_hint(
             return res;
         }
     }
-    Err(HintError::UnknownHint(
-        hint_data.code.to_string().into_boxed_str(),
-    ))
+    Err(HintError::UnknownHint(hint_data.code.to_string().into_boxed_str()))
 }

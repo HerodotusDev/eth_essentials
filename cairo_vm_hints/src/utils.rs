@@ -1,10 +1,7 @@
 use cairo_vm::{
     hint_processor::builtin_hint_processor::{
         builtin_hint_processor_definition::HintProcessorData,
-        hint_utils::{
-            get_integer_from_var_name, get_ptr_from_var_name, get_relocatable_from_var_name,
-            insert_value_from_var_name,
-        },
+        hint_utils::{get_integer_from_var_name, get_ptr_from_var_name, get_relocatable_from_var_name, insert_value_from_var_name},
     },
     types::relocatable::MaybeRelocatable,
     vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
@@ -25,21 +22,10 @@ pub fn write_value(
     vm: &mut VirtualMachine,
     hint_data: &HintProcessorData,
 ) -> Result<(), HintError> {
-    insert_value_from_var_name(
-        var_name,
-        value,
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )
+    insert_value_from_var_name(var_name, value, vm, &hint_data.ids_data, &hint_data.ap_tracking)
 }
 
-pub fn write_struct(
-    var_name: &str,
-    values: &[MaybeRelocatable],
-    vm: &mut VirtualMachine,
-    hint_data: &HintProcessorData,
-) -> Result<(), HintError> {
+pub fn write_struct(var_name: &str, values: &[MaybeRelocatable], vm: &mut VirtualMachine, hint_data: &HintProcessorData) -> Result<(), HintError> {
     vm.segments.load_data(
         get_relocatable_from_var_name(var_name, vm, &hint_data.ids_data, &hint_data.ap_tracking)?,
         values,
@@ -47,23 +33,12 @@ pub fn write_struct(
     Ok(())
 }
 
-pub fn write_vector(
-    var_name: &str,
-    vector: &[MaybeRelocatable],
-    vm: &mut VirtualMachine,
-    hint_data: &HintProcessorData,
-) -> Result<(), HintError> {
-    vm.segments.load_data(
-        get_ptr_from_var_name(var_name, vm, &hint_data.ids_data, &hint_data.ap_tracking)?,
-        vector,
-    )?;
+pub fn write_vector(var_name: &str, vector: &[MaybeRelocatable], vm: &mut VirtualMachine, hint_data: &HintProcessorData) -> Result<(), HintError> {
+    vm.segments
+        .load_data(get_ptr_from_var_name(var_name, vm, &hint_data.ids_data, &hint_data.ap_tracking)?, vector)?;
     Ok(())
 }
 
-pub fn get_value(
-    var_name: &str,
-    vm: &mut VirtualMachine,
-    hint_data: &HintProcessorData,
-) -> Result<Felt252, HintError> {
+pub fn get_value(var_name: &str, vm: &mut VirtualMachine, hint_data: &HintProcessorData) -> Result<Felt252, HintError> {
     get_integer_from_var_name(var_name, vm, &hint_data.ids_data, &hint_data.ap_tracking)
 }

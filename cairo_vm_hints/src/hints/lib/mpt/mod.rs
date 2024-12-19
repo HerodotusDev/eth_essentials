@@ -35,9 +35,7 @@ fn is_long_list(value: Felt252) -> bool {
 }
 
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-    get_integer_from_var_name, insert_value_from_var_name,
-};
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{get_integer_from_var_name, insert_value_from_var_name};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::MaybeRelocatable;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
@@ -52,12 +50,7 @@ fn hint_long_short_list(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let list_prefix = get_integer_from_var_name(
-        "list_prefix",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
+    let list_prefix = get_integer_from_var_name("list_prefix", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
 
     match list_prefix {
         value if is_short_list(value) => insert_value_from_var_name(
@@ -90,12 +83,7 @@ fn hint_first_item_type(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let first_item_prefix = get_integer_from_var_name(
-        "first_item_prefix",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
+    let first_item_prefix = get_integer_from_var_name("first_item_prefix", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
 
     match first_item_prefix {
         value if is_single_byte(value) => insert_value_from_var_name(
@@ -112,11 +100,7 @@ fn hint_first_item_type(
             &hint_data.ids_data,
             &hint_data.ap_tracking,
         ),
-        value => Err(HintError::InvalidValue(Box::new((
-            "Unsupported first item prefix",
-            value,
-            Felt252::ZERO,
-        )))),
+        value => Err(HintError::InvalidValue(Box::new(("Unsupported first item prefix", value, Felt252::ZERO)))),
     }
 }
 
@@ -128,12 +112,7 @@ fn hint_second_item_type(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let second_item_prefix = get_integer_from_var_name(
-        "second_item_prefix",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
+    let second_item_prefix = get_integer_from_var_name("second_item_prefix", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
 
     match second_item_prefix {
         value if is_single_byte(value) => insert_value_from_var_name(
@@ -173,12 +152,7 @@ fn hint_item_type(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let item_prefix = get_integer_from_var_name(
-        "item_prefix",
-        vm,
-        &hint_data.ids_data,
-        &hint_data.ap_tracking,
-    )?;
+    let item_prefix = get_integer_from_var_name("item_prefix", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
 
     match item_prefix {
         value if is_single_byte(value) => insert_value_from_var_name(
@@ -214,8 +188,6 @@ pub fn run_hint(
         HINT_FIRST_ITEM_TYPE => hint_first_item_type(vm, exec_scope, hint_data, constants),
         HINT_SECOND_ITEM_TYPE => hint_second_item_type(vm, exec_scope, hint_data, constants),
         HINT_ITEM_TYPE => hint_item_type(vm, exec_scope, hint_data, constants),
-        _ => Err(HintError::UnknownHint(
-            hint_data.code.to_string().into_boxed_str(),
-        )),
+        _ => Err(HintError::UnknownHint(hint_data.code.to_string().into_boxed_str())),
     }
 }

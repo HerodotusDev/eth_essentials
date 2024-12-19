@@ -14,6 +14,7 @@ from starkware.cairo.common.registers import get_fp_and_pc
 
 const DIV_32 = 2 ** 32;
 const DIV_32_MINUS_1 = DIV_32 - 1;
+const PRIME = 3618502788666131213697322783095070105623107215331596699973092056135872020481;
 
 // Takes the hex representation and count the number of zeroes.
 // Ie: returns the number of trailing zeroes bytes.

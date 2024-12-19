@@ -118,12 +118,10 @@ struct FileWriter {
 
 impl Writer for FileWriter {
     fn write(&mut self, bytes: &[u8]) -> Result<(), bincode::error::EncodeError> {
-        self.buf_writer
-            .write_all(bytes)
-            .map_err(|e| bincode::error::EncodeError::Io {
-                inner: e,
-                index: self.bytes_written,
-            })?;
+        self.buf_writer.write_all(bytes).map_err(|e| bincode::error::EncodeError::Io {
+            inner: e,
+            index: self.bytes_written,
+        })?;
 
         self.bytes_written += bytes.len();
 
@@ -194,10 +192,7 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
 
     let mut cairo_runner = match if args.run_from_cairo_pie {
         let pie = CairoPie::read_zip_file(&args.filename)?;
-        let mut hint_processor = BuiltinHintProcessor::new(
-            Default::default(),
-            RunResources::new(pie.execution_resources.n_steps),
-        );
+        let mut hint_processor = BuiltinHintProcessor::new(Default::default(), RunResources::new(pie.execution_resources.n_steps));
         cairo_run::cairo_run_pie(&pie, &cairo_run_config, &mut hint_processor)
     } else {
         let program_content = std::fs::read(args.filename).map_err(Error::IO)?;
@@ -218,14 +213,10 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
     }
 
     if let Some(ref trace_path) = args.trace_file {
-        let relocated_trace = cairo_runner
-            .relocated_trace
-            .as_ref()
-            .ok_or(Error::Trace(TraceError::TraceNotRelocated))?;
+        let relocated_trace = cairo_runner.relocated_trace.as_ref().ok_or(Error::Trace(TraceError::TraceNotRelocated))?;
 
         let trace_file = std::fs::File::create(trace_path)?;
-        let mut trace_writer =
-            FileWriter::new(io::BufWriter::with_capacity(3 * 1024 * 1024, trace_file));
+        let mut trace_writer = FileWriter::new(io::BufWriter::with_capacity(3 * 1024 * 1024, trace_file));
 
         cairo_run::write_encoded_trace(relocated_trace, &mut trace_writer)?;
         trace_writer.flush()?;
@@ -233,8 +224,7 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
 
     if let Some(ref memory_path) = args.memory_file {
         let memory_file = std::fs::File::create(memory_path)?;
-        let mut memory_writer =
-            FileWriter::new(io::BufWriter::with_capacity(5 * 1024 * 1024, memory_file));
+        let mut memory_writer = FileWriter::new(io::BufWriter::with_capacity(5 * 1024 * 1024, memory_file));
 
         cairo_run::write_encoded_memory(&cairo_runner.relocated_memory, &mut memory_writer)?;
         memory_writer.flush()?;
@@ -250,9 +240,7 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
     //     start_tracer(&cairo_runner)?;
     // }
 
-    if let (Some(file_path), Some(ref trace_file), Some(ref memory_file)) =
-        (args.air_private_input, args.trace_file, args.memory_file)
-    {
+    if let (Some(file_path), Some(ref trace_file), Some(ref memory_file)) = (args.air_private_input, args.trace_file, args.memory_file) {
         // Get absolute paths of trace_file & memory_file
         let trace_path = trace_file
             .as_path()
@@ -277,10 +265,7 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
 
     if let Some(ref file_name) = args.cairo_pie_output {
         let file_path = Path::new(file_name);
-        cairo_runner
-            .get_cairo_pie()
-            .map_err(CairoRunError::Runner)?
-            .write_zip_file(file_path)?
+        cairo_runner.get_cairo_pie().map_err(CairoRunError::Runner)?.write_zip_file(file_path)?
     }
 
     Ok(())

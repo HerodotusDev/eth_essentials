@@ -6,12 +6,12 @@ use cairo_vm::{
 };
 use std::collections::HashMap;
 
-mod bit_length;
-mod block_header;
-mod mmr;
-mod mpt;
-mod rlp_little;
-mod utils;
+pub mod bit_length;
+pub mod block_header;
+pub mod mmr;
+pub mod mpt;
+pub mod rlp_little;
+pub mod utils;
 
 pub fn run_hint(
     vm: &mut VirtualMachine,
@@ -34,7 +34,5 @@ pub fn run_hint(
             return res;
         }
     }
-    Err(HintError::UnknownHint(
-        hint_data.code.to_string().into_boxed_str(),
-    ))
+    Err(HintError::UnknownHint(hint_data.code.to_string().into_boxed_str()))
 }

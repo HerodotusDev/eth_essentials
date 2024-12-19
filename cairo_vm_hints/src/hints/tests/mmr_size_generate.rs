@@ -72,10 +72,7 @@ pub fn hint_generate_sequential(
     // vm.segments.write_arg(vm.seg, arg)
     let num_elems: u64 = get_value("num_elems", vm, hint_data)?.try_into().unwrap();
 
-    println!(
-        "Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {})...",
-        num_elems
-    );
+    println!("Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {})...", num_elems);
 
     let mut valid_mmr_sizes = HashSet::new();
     let mut mmr_size = 0;
@@ -86,9 +83,7 @@ pub fn hint_generate_sequential(
     let expected_output = (0..=mmr_size)
         .map(|i| MaybeRelocatable::Int(valid_mmr_sizes.contains(&i).into()))
         .collect::<Vec<_>>();
-    let input_array = (0..=mmr_size)
-        .map(|x| MaybeRelocatable::Int(x.into()))
-        .collect::<Vec<_>>();
+    let input_array = (0..=mmr_size).map(|x| MaybeRelocatable::Int(x.into())).collect::<Vec<_>>();
 
     write_vector("input_array", &input_array, vm, hint_data)?;
     write_vector("expected_output", &expected_output, vm, hint_data)?;

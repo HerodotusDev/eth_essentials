@@ -7,18 +7,15 @@ use std::collections::HashMap;
 
 pub const HINT_EXPECTED_LEADING_ZEROES: &str = "from tools.py.utils import parse_int_to_bytes, count_leading_zero_nibbles_from_hex\nreversed_hex = parse_int_to_bytes(ids.x.low + (2 ** 128) * ids.x.high)[::-1].hex()\nexpected_leading_zeroes = count_leading_zero_nibbles_from_hex(reversed_hex[1:] if ids.cut_nibble == 1 else reversed_hex)";
 
+// TODO fix this impl
 pub fn hint_expected_leading_zeroes(
     vm: &mut VirtualMachine,
     exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let x_low: u128 = utils::get_value("x.low", vm, hint_data)?
-        .try_into()
-        .unwrap();
-    let x_high: u128 = utils::get_value("x.high", vm, hint_data)?
-        .try_into()
-        .unwrap();
+    let x_low: u128 = utils::get_value("x.low", vm, hint_data)?.try_into().unwrap();
+    let x_high: u128 = utils::get_value("x.high", vm, hint_data)?.try_into().unwrap();
     let cut_nibble = utils::get_value("cut_nibble", vm, hint_data)?;
 
     let reversed_hex = hex::encode([x_low.to_be_bytes(), x_high.to_be_bytes()].concat())
@@ -32,11 +29,7 @@ pub fn hint_expected_leading_zeroes(
     } else {
         reversed_hex
     };
-    let expected_leading_zeroes: Felt252 = hex_to_check
-        .into_iter()
-        .take_while(|c| *c == b'0')
-        .count()
-        .into();
+    let expected_leading_zeroes: Felt252 = hex_to_check.into_iter().take_while(|c| *c == b'0').count().into();
     exec_scope.insert_value("expected_leading_zeroes", expected_leading_zeroes);
 
     Ok(())
@@ -50,19 +43,11 @@ pub fn hint_expected_nibble(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let key_low: u128 = utils::get_value("key.low", vm, hint_data)?
-        .try_into()
-        .unwrap();
-    let key_high: u128 = utils::get_value("key.high", vm, hint_data)?
-        .try_into()
-        .unwrap();
-    let key_leading_zeroes_nibbles: usize =
-        utils::get_value("key_leading_zeroes_nibbles", vm, hint_data)?
-            .try_into()
-            .unwrap();
-    let nibble_index: usize = utils::get_value("nibble_index", vm, hint_data)?
-        .try_into()
-        .unwrap();
+    println!("ala");
+    let key_low: u128 = utils::get_value("key.low", vm, hint_data)?.try_into().unwrap();
+    let key_high: u128 = utils::get_value("key.high", vm, hint_data)?.try_into().unwrap();
+    let key_leading_zeroes_nibbles: usize = utils::get_value("key_leading_zeroes_nibbles", vm, hint_data)?.try_into().unwrap();
+    let nibble_index: usize = utils::get_value("nibble_index", vm, hint_data)?.try_into().unwrap();
 
     let hex = hex::encode([key_low.to_be_bytes(), key_high.to_be_bytes()].concat());
     let nibble_char = format!("{:0width$}{}", "", hex, width = key_leading_zeroes_nibbles)

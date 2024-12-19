@@ -22,22 +22,14 @@ pub fn hint_carry(
 
     utils::write_value(
         "carry_low",
-        if a_low + b_low >= shift {
-            Felt252::ONE
-        } else {
-            Felt252::ZERO
-        },
+        if a_low + b_low >= shift { Felt252::ONE } else { Felt252::ZERO },
         vm,
         hint_data,
     )?;
 
     utils::write_value(
         "carry_high",
-        if a_high + b_high >= shift {
-            Felt252::ONE
-        } else {
-            Felt252::ZERO
-        },
+        if a_high + b_high >= shift { Felt252::ONE } else { Felt252::ZERO },
         vm,
         hint_data,
     )?;

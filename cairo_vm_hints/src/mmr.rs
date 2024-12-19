@@ -70,10 +70,7 @@ impl<H: Hasher> Mmr<H> {
     pub fn get_root(&self) -> BigUint {
         let mut peaks = self.retrieve_nodes(self.get_peaks());
         let mut hash = peaks.pop().unwrap();
-        peaks
-            .iter()
-            .rev()
-            .for_each(|x| hash = self.hasher.hash(x, &hash));
+        peaks.iter().rev().for_each(|x| hash = self.hasher.hash(x, &hash));
         self.hasher.hash(&self.size().into(), &hash)
     }
 
@@ -114,9 +111,6 @@ impl<H: Hasher> Mmr<H> {
     }
 
     pub fn retrieve_nodes(&self, indices: Vec<usize>) -> Vec<BigUint> {
-        indices
-            .iter()
-            .map(|index| self.nodes[*index - 1].clone())
-            .collect()
+        indices.iter().map(|index| self.nodes[*index - 1].clone()).collect()
     }
 }
