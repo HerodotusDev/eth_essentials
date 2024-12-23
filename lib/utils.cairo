@@ -22,10 +22,12 @@ const PRIME = 361850278866613121369732278309507010562310721533159669997309205613
 func count_trailing_zeroes_128{bitwise_ptr: BitwiseBuiltin*}(x: felt, pow2_array: felt*) -> (
     res: felt
 ) {
+    alloc_locals;
+
     if (x == 0) {
         return (res=16);
     }
-    alloc_locals;
+    
     local trailing_zeroes_bytes;
     %{
         from tools.py.utils import count_trailing_zero_bytes_from_int

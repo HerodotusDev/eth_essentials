@@ -19,12 +19,11 @@ pub fn hint_is_zero(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let nibble_index: Felt252 = utils::get_value("nibble_index", vm, hint_data)?;
-    let key_leading_zeroes_nibbles: Felt252 = utils::get_value("key_leading_zeroes_nibbles", vm, hint_data)?;
-
+    let nibble_index: i128 = utils::get_value("nibble_index", vm, hint_data)?.try_into().unwrap();
+    let key_leading_zeroes_nibbles: i128 = utils::get_value("key_leading_zeroes_nibbles", vm, hint_data)?.try_into().unwrap();
     utils::write_value(
         "is_zero",
-        match nibble_index.cmp(&(key_leading_zeroes_nibbles - Felt252::ONE)) {
+        match nibble_index.cmp(&(key_leading_zeroes_nibbles - 1)) {
             Ordering::Less | Ordering::Equal => Felt252::ONE,
             Ordering::Greater => Felt252::ZERO,
         },
@@ -102,7 +101,6 @@ pub fn hint_words_loop(
 ) -> Result<(), HintError> {
     let n_words_to_handle_in_loop: Felt252 = utils::get_value("n_words_to_handle_in_loop", vm, hint_data)?;
     let n_words_handled: Felt252 = utils::get_value("n_words_handled", vm, hint_data)?;
-
     insert_value_into_ap(
         vm,
         if n_words_to_handle_in_loop == n_words_handled {

@@ -1,5 +1,6 @@
 use crate::utils;
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_relocatable_from_var_name;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
@@ -14,11 +15,20 @@ pub fn hint_expected_leading_zeroes(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let x_low: u128 = utils::get_value("x.low", vm, hint_data)?.try_into().unwrap();
-    let x_high: u128 = utils::get_value("x.high", vm, hint_data)?.try_into().unwrap();
+    let x_ptr = get_relocatable_from_var_name("x", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
+
+    let x = vm
+        .get_continuous_range(x_ptr, 2)?
+        .into_iter()
+        .map(|v| v.get_int().unwrap())
+        .collect::<Vec<Felt252>>();
+
+    let x_low: u128 = x[0].try_into().unwrap();
+    let x_high: u128 = x[1].try_into().unwrap();
+
     let cut_nibble = utils::get_value("cut_nibble", vm, hint_data)?;
 
-    let reversed_hex = hex::encode([x_low.to_be_bytes(), x_high.to_be_bytes()].concat())
+    let reversed_hex = hex::encode([x_high.to_be_bytes(), x_low.to_be_bytes()].concat())
         .bytes()
         .rev()
         .collect::<Vec<u8>>();
@@ -43,17 +53,26 @@ pub fn hint_expected_nibble(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    println!("ala");
-    let key_low: u128 = utils::get_value("key.low", vm, hint_data)?.try_into().unwrap();
-    let key_high: u128 = utils::get_value("key.high", vm, hint_data)?.try_into().unwrap();
+    let key_ptr = get_relocatable_from_var_name("key", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
+
+    let key = vm
+        .get_continuous_range(key_ptr, 2)?
+        .into_iter()
+        .map(|v| v.get_int().unwrap())
+        .collect::<Vec<Felt252>>();
+
+    let key_low: u128 = key[0].try_into().unwrap();
+    let key_high: u128 = key[1].try_into().unwrap();
+
     let key_leading_zeroes_nibbles: usize = utils::get_value("key_leading_zeroes_nibbles", vm, hint_data)?.try_into().unwrap();
     let nibble_index: usize = utils::get_value("nibble_index", vm, hint_data)?.try_into().unwrap();
 
-    let hex = hex::encode([key_low.to_be_bytes(), key_high.to_be_bytes()].concat());
+    let hex = hex::encode([key_high.to_be_bytes(), key_low.to_be_bytes()].concat());
     let nibble_char = format!("{:0width$}{}", "", hex, width = key_leading_zeroes_nibbles)
         .chars()
         .nth(nibble_index + key_leading_zeroes_nibbles)
         .unwrap();
+
     exec_scope.insert_value("expected_nibble", nibble_char.to_digit(16).unwrap());
 
     Ok(())

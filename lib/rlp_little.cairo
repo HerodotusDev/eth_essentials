@@ -516,7 +516,7 @@ func extract_n_bytes_from_le_64_chunks_array{range_check_ptr}(
     alloc_locals;
     let (local res: felt*) = alloc();
 
-    let (q, n_ending_bytes) = felt_divmod_8(n_bytes);
+    let (local q, local n_ending_bytes) = felt_divmod_8(n_bytes);
 
     local n_words: felt;
 
@@ -556,7 +556,7 @@ func extract_n_bytes_from_le_64_chunks_array{range_check_ptr}(
     local pow_cut = pow2_array[8 * start_offset];
     local pow_acc = pow2_array[64 - 8 * start_offset];
 
-    let (current_word, _) = felt_divmod(array[start_word], pow_cut);
+    let (local current_word, _) = felt_divmod(array[start_word], pow_cut);
 
     if (n_words == 1) {
         local needs_next_word: felt;
@@ -608,10 +608,10 @@ func extract_n_bytes_from_le_64_chunks_array{range_check_ptr}(
     let q = [ap];
     let r = [ap + 1];
     %{ ids.q, ids.r = divmod(memory[ids.array + ids.start_word + ids.i], ids.pow_cut) %}
+    ap += 2;
     // %{
     //     print(f"val={memory[ids.array + ids.start_word + ids.i]} q={ids.q} r={ids.r}")
     // %}
-    ap += 2;
     tempvar offset = 3 * n_words_handled;
     assert [range_check_ptr + offset] = q;
     assert [range_check_ptr + offset + 1] = r;

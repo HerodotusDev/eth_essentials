@@ -42,9 +42,9 @@ use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
 use cairo_vm::Felt252;
 use std::collections::HashMap;
 
-const HINT_LONG_SHORT_LIST: &str = "from tools.py.hints import is_short_list, is_long_list\nif is_short_list(ids.list_prefix):\n    ids.long_short_list = 0\nelif is_long_list(ids.list_prefix):\n    ids.long_short_list = 1\nelse:\n    raise ValueError(f\"Invalid list prefix: {hex(ids.list_prefix)}. Not a recognized list type.\")";
+pub const HINT_LONG_SHORT_LIST: &str = "from tools.py.hints import is_short_list, is_long_list\nif is_short_list(ids.list_prefix):\n    ids.long_short_list = 0\nelif is_long_list(ids.list_prefix):\n    ids.long_short_list = 1\nelse:\n    raise ValueError(f\"Invalid list prefix: {hex(ids.list_prefix)}. Not a recognized list type.\")";
 
-fn hint_long_short_list(
+pub fn hint_long_short_list(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -75,9 +75,9 @@ fn hint_long_short_list(
     }
 }
 
-const HINT_FIRST_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.first_item_prefix):\n    ids.first_item_type = 0\nelif is_short_string(ids.first_item_prefix):\n    ids.first_item_type = 1\nelse:\n    raise ValueError(f\"Unsupported first item prefix: {hex(ids.first_item_prefix)}.\")";
+pub const HINT_FIRST_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.first_item_prefix):\n    ids.first_item_type = 0\nelif is_short_string(ids.first_item_prefix):\n    ids.first_item_type = 1\nelse:\n    raise ValueError(f\"Unsupported first item prefix: {hex(ids.first_item_prefix)}.\")";
 
-fn hint_first_item_type(
+pub fn hint_first_item_type(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -104,9 +104,9 @@ fn hint_first_item_type(
     }
 }
 
-const HINT_SECOND_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string, is_long_string\nif is_single_byte(ids.second_item_prefix):\n    ids.second_item_type = 0\nelif is_short_string(ids.second_item_prefix):\n    ids.second_item_type = 1\nelif is_long_string(ids.second_item_prefix):\n    ids.second_item_type = 2\nelse:\n    raise ValueError(f\"Unsupported second item prefix: {hex(ids.second_item_prefix)}.\")";
+pub const HINT_SECOND_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string, is_long_string\nif is_single_byte(ids.second_item_prefix):\n    ids.second_item_type = 0\nelif is_short_string(ids.second_item_prefix):\n    ids.second_item_type = 1\nelif is_long_string(ids.second_item_prefix):\n    ids.second_item_type = 2\nelse:\n    raise ValueError(f\"Unsupported second item prefix: {hex(ids.second_item_prefix)}.\")";
 
-fn hint_second_item_type(
+pub fn hint_second_item_type(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,
@@ -144,9 +144,9 @@ fn hint_second_item_type(
     }
 }
 
-const HINT_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.item_prefix):\n    ids.item_type = 0\nelif is_short_string(ids.item_prefix):\n    ids.item_type = 1\nelse:\n    raise ValueError(f\"Unsupported item prefix: {hex(ids.item_prefix)} for a branch node. Should be single byte or short string only.\")";
+pub const HINT_ITEM_TYPE: &str = "from tools.py.hints import is_single_byte, is_short_string\nif is_single_byte(ids.item_prefix):\n    ids.item_type = 0\nelif is_short_string(ids.item_prefix):\n    ids.item_type = 1\nelse:\n    raise ValueError(f\"Unsupported item prefix: {hex(ids.item_prefix)} for a branch node. Should be single byte or short string only.\")";
 
-fn hint_item_type(
+pub fn hint_item_type(
     vm: &mut VirtualMachine,
     _exec_scope: &mut ExecutionScopes,
     hint_data: &HintProcessorData,

@@ -36,7 +36,7 @@ pub fn hint_expected_nibble(
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     let extracted_nibble_at_pos: Felt252 = utils::get_value("extracted_nibble_at_pos", vm, hint_data)?;
-    let expected_nibble: Felt252 = exec_scope.get("expected_nibble")?;
+    let expected_nibble: Felt252 = exec_scope.get::<u32>("expected_nibble")?.into();
 
     if extracted_nibble_at_pos.ne(&expected_nibble) {
         Err(HintError::AssertNotEqualFail(Box::new((
