@@ -27,7 +27,7 @@ func count_trailing_zeroes_128{bitwise_ptr: BitwiseBuiltin*}(x: felt, pow2_array
     if (x == 0) {
         return (res=16);
     }
-    
+
     local trailing_zeroes_bytes;
     %{
         from tools.py.utils import count_trailing_zero_bytes_from_int
