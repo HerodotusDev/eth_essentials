@@ -67,7 +67,9 @@ pub fn hint_expected_nibble(
     let key_leading_zeroes_nibbles: usize = utils::get_value("key_leading_zeroes_nibbles", vm, hint_data)?.try_into().unwrap();
     let nibble_index: usize = utils::get_value("nibble_index", vm, hint_data)?.try_into().unwrap();
 
-    let hex = hex::encode([key_high.to_be_bytes(), key_low.to_be_bytes()].concat());
+    let hex = hex::encode([key_high.to_be_bytes(), key_low.to_be_bytes()].concat())
+        .trim_start_matches('0')
+        .to_string();
     let nibble_char = format!("{:0width$}{}", "", hex, width = key_leading_zeroes_nibbles)
         .chars()
         .nth(nibble_index + key_leading_zeroes_nibbles)
