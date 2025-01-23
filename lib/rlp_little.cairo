@@ -406,7 +406,7 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         tempvar range_check_ptr = range_check_ptr + 1;
         // Reindex nibble_index to start from 0 accounting for the leading zeroes
         // Ex: key is 0x00abc. Nibble index is 2 (=> nibble is "a"). Reindexed nibble index is then 2-2=0.
-        let nibble_index = nibble_index - key_leading_zeroes_nibbles;
+        local nibble_index = nibble_index - key_leading_zeroes_nibbles;
         local get_nibble_from_low: felt;
         // we get the nibble from low part of key either if :
         // - nibble_index is in [0, 31] and key_nibbles <= 32
