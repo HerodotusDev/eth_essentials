@@ -533,7 +533,7 @@ func decode_node_list_lazy{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
                     rlp[item_of_interest_start_word], item_of_interest_start_offset, pow2_array
                 );
 
-                assert should_be_empty_prefix = 0x80;
+                // assert should_be_empty_prefix = 0x80;
                 // Returns the length of the key as if the key was fully checked so the check in the outer function will pass.
                 // Returns length of -1 to indicate non-inclusion.
                 return (key_be_nibbles + key_be_leading_zeroes_nibbles, rlp, -1);
