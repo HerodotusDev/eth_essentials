@@ -1,7 +1,7 @@
 """
 Merkle Mountain Range
 Adapted from https://github.com/jjyr/mmr.py (MIT License)
-Replicates the MMR behavior of the chunk processor, ie : 
+Replicates the MMR behavior of the chunk processor, ie :
     - the leafs are directly inserted in the tree without any hashing (they're supposed to be already hashes of block headers)
     - merging is done by hashing the two hashes together, without prepending any indexes
     - the root is computed by bagging the peaks and hashing the result with the size of the MMR
