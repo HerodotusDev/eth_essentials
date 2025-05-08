@@ -21,7 +21,7 @@ pub fn hint_expected_leading_zeroes(
         .map(|v| v.get_int().unwrap())
         .collect::<Vec<Felt252>>();
 
-    let x_low: u128  = x_felts[0].try_into().unwrap();
+    let x_low: u128 = x_felts[0].try_into().unwrap();
     let x_high: u128 = x_felts[1].try_into().unwrap();
 
     let mut le_bytes = [0u8; 32];
@@ -43,11 +43,7 @@ pub fn hint_expected_leading_zeroes(
         hex_str
     };
 
-    let leading_zeroes: Felt252 = hex_to_check
-        .chars()
-        .take_while(|c| *c == '0')
-        .count()
-        .into();
+    let leading_zeroes: Felt252 = hex_to_check.chars().take_while(|c| *c == '0').count().into();
 
     exec_scope.insert_value("expected_leading_zeroes", leading_zeroes);
     Ok(())
