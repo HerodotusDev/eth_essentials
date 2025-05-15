@@ -28,7 +28,7 @@ pub fn hint_expected_leading_zeroes(
     le_bytes[..16].copy_from_slice(&x_low.to_le_bytes());
     le_bytes[16..].copy_from_slice(&x_high.to_le_bytes());
 
-    let mut hex_str = hex::encode(le_bytes).trim_start_matches('0').to_string();
+    let mut hex_str = hex::encode(le_bytes).to_string();
     if hex_str.is_empty() {
         hex_str.push('0');
     }
