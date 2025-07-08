@@ -121,7 +121,7 @@ def get_peaks(mmr_size) -> List[int]:
     def get_right_peak(height, pos, mmr_size):
         """
         find next right peak
-        peak not exsits if height is -1
+        peak not exists if height is -1
         """
         # jump to right sibling
         pos += sibling_offset(height)
@@ -267,7 +267,7 @@ class MMR(object):
                 # get left child sib
                 sib = pos - sibling_offset(height)
                 # print(
-                #     f"Sib:{sib}, pos:{pos}, offset : {sibling_offset(height)}, heigh:{height}"
+                #     f"Sib:{sib}, pos:{pos}, offset : {sibling_offset(height)}, height:{height}"
                 # )
                 # break if sib is out of mmr
                 if sib > self.last_pos:

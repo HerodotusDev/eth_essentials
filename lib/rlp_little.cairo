@@ -32,7 +32,7 @@ func n_nibbles_in_key{range_check_ptr}(key: Uint256, pow2_array: felt*) -> (res:
 // From a Uint256 number in little endian bytes representation,
 // predict the number of leading zeroes nibbles before the number is converted to BE representation.
 // Parameters:
-// - x: the liitle endian representation of the number.
+// - x: the little endian representation of the number.
 // - n_nibbles_after_reversion: the fixed # of nibbles in the number after reversion. This is known from RLP decoding.
 // - cut_nibble: if 1, takes into account that the leftmost nibble in BE representation will be cut.
 // - pow2_array: array of powers of 2.
@@ -42,7 +42,7 @@ func n_nibbles_in_key{range_check_ptr}(key: Uint256, pow2_array: felt*) -> (res:
 // Example 2:
 // LE input : 0x ab 0d 0f e0 : cut_nibble = 1
 // BE reverted: 0x e0 0d 0f ab
-// BE reverted + cutted ("e" removed) : 0x 00 d0 fa b -> 2 leading zeroes.
+// BE reverted + cut ("e" removed) : 0x 00 d0 fa b -> 2 leading zeroes.
 func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseBuiltin*}(
     x: Uint256, n_nibbles_after_reversion: felt, cut_nibble: felt, pow2_array: felt*
 ) -> (res: felt) {
@@ -221,9 +221,9 @@ func key_subset_to_uint256(key_subset: felt*, key_subset_len: felt) -> Uint256 {
 // Nibbles checked is 2
 // Key subset is 0x4523 (little endian)
 // First key subset is going to be reversed to big endian : 0x2345
-// Then Full Key will first be cutted to 0x2345678 (n_nibbles checked removed on the left)
-// Then again cutted to 0x2345 (keep key_subset_nibble_len on the left)
-// Then the key subset will be asserted against the cutted key.
+// Then Full Key will first be cut to 0x2345678 (n_nibbles checked removed on the left)
+// Then again cut to 0x2345 (keep key_subset_nibble_len on the left)
+// Then the key subset will be asserted against the cut key.
 func assert_subset_in_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     key_subset: felt*,
     key_subset_len: felt,
@@ -411,7 +411,7 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         // we get the nibble from low part of key either if :
         // - nibble_index is in [0, 31] and key_nibbles <= 32
         // - nibble_index is in [32, 63] and key_nibbles > 32
-        // Consenquently, we get the nibble from high part of the key only if :
+        // Consequently, we get the nibble from high part of the key only if :
         // - nibble_index is in [0, 31] and key_nibbles > 32
         %{ ids.get_nibble_from_low = 1 if (0 <= ids.nibble_index <= 31 and ids.key_nibbles <= 32) or (32 <= ids.nibble_index <= 63 and ids.key_nibbles > 32) else 0 %}
         // %{

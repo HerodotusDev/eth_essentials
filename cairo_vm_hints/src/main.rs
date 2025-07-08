@@ -97,7 +97,7 @@ enum Error {
     #[error("Failed to interact with the file system")]
     IO(#[from] std::io::Error),
     #[error("The cairo program execution failed")]
-    Runner(#[from] CairoRunError),
+    Runner(#[from] Box<CairoRunError>),
     #[error(transparent)]
     EncodeTrace(#[from] EncodeTraceError),
     #[error(transparent)]
@@ -202,7 +202,7 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
         Ok(runner) => runner,
         Err(error) => {
             eprintln!("{error}");
-            return Err(Error::Runner(error));
+            return Err(Error::Runner(Box::new(error)));
         }
     };
 
@@ -267,7 +267,7 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
         let file_path = Path::new(file_name);
         cairo_runner
             .get_cairo_pie()
-            .map_err(CairoRunError::Runner)?
+            .map_err(|e| Box::new(CairoRunError::Runner(e)))?
             .write_zip_file(file_path, true)?
     }
 

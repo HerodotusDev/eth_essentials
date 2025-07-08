@@ -46,7 +46,7 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
     root: Uint256,
     pow2_array: felt*,
 ) -> (value: felt*, value_len: felt) {
-    // %{ print(f"Veryfing key 0x{'0'*ids.key_be_leading_zeroes_nibbles}{hex(ids.key_be.low+2**128*ids.key_be.high)[2:]}") %}
+    // %{ print(f"Verifying key 0x{'0'*ids.key_be_leading_zeroes_nibbles}{hex(ids.key_be.low+2**128*ids.key_be.high)[2:]}") %}
     // Verify the key is a valid Uint256 number.
     assert [range_check_ptr] = key_be.low;
     assert [range_check_ptr + 1] = key_be.high;

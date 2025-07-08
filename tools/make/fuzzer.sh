@@ -28,7 +28,7 @@ touch "$LOG_FILE"
 
 # Export the log file path to be available in subshells
 export LOG_FILE
-export filenname
+export filename
 
 process_input() {
     local input_file="$2"

@@ -143,7 +143,7 @@ func main{
     let (root_keccak: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
     let (root_keccak) = uint256_reverse_endian(root_keccak);
 
-    // Check that the previous roots matche the ones provided in the program's input:
+    // Check that the previous roots match the ones provided in the program's input:
     assert 0 = root_poseidon - mmr_last_root_poseidon;
     assert 0 = root_keccak.low - mmr_last_root_keccak.low;
     assert 0 = root_keccak.high - mmr_last_root_keccak.high;

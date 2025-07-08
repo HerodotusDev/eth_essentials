@@ -276,7 +276,7 @@ func uint256_sub{range_check_ptr}(a: Uint256, b: Uint256) -> (res: Uint256) {
     }
 }
 
-// Write the elements of the array as key in the dictionnary and assign the value 0 to each key.
+// Write the elements of the array as key in the dictionary and assign the value 0 to each key.
 // Used to check that an element in the dict is present by checking dict[key] == 1.
 // Use with a default_dict with default_value = 0.
 // If the element is present, the value will be 1.

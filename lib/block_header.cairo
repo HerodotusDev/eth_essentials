@@ -187,7 +187,7 @@ func extract_block_number_big{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pow
 
     let (first_byte, remaining_7) = felt_divmod(rlp_difficulty, 2 ** 56);
     let difficulty_offset = get_bigint_byte_size(first_byte);
-    // MAX Difficulty recorded before ETH merge is 15911382925018176 so max difficulty offset possible is 7, and will alway fit in the remaining_7.
+    // MAX Difficulty recorded before ETH merge is 15911382925018176 so max difficulty offset possible is 7, and will always fit in the remaining_7.
     assert [range_check_ptr] = 7 - difficulty_offset;
     tempvar range_check_ptr = range_check_ptr + 1;
     if (difficulty_offset != 7) {
@@ -320,7 +320,7 @@ func reverse_block_header_chunks{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         return (reversed_block_header, number_of_exact_8bytes_chunks + 1);
     }
 
-    // If we reach that poiint, it means that 8 divides n_bytes, so the last chunk is a full 8 bytes chunk and we don't need to handle it.
+    // If we reach that point, it means that 8 divides n_bytes, so the last chunk is a full 8 bytes chunk and we don't need to handle it.
 
     return (reversed_block_header, number_of_exact_8bytes_chunks);
 }

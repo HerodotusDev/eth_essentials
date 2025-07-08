@@ -123,7 +123,7 @@ func compute_height_pre_alloc_pow2{range_check_ptr, pow2_array: felt*}(x: felt) 
         assert [range_check_ptr + 3] = x - n;
         tempvar range_check_ptr = range_check_ptr + 4;
         // Jump left on the MMR and continue until it's all ones.
-        // This is done by substracting (2^(bit_length-1) - 1) from x.
+        // This is done by subtracting (2^(bit_length-1) - 1) from x.
         return compute_height_pre_alloc_pow2(x - n + 1);
     }
 }
