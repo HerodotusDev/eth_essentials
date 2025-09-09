@@ -561,3 +561,74 @@ func hash_subtree_path{range_check_ptr, poseidon_ptr: PoseidonBuiltin*, pow2_arr
         );
     }
 }
+
+
+// Hashes a merkle path for Keccak-based MMR with Uint256 nodes.
+// Params:
+// - element: Uint256 - the current node's value
+// - height: felt - the current height of the node
+// - position: felt - the current position of the node in the tree
+// - inclusion_proof: felt* - the list of sibling nodes from the leaf to the root
+// - inclusion_proof_len: felt - the length of the inclusion_proof
+// Returns:
+// - peak: Uint256 - the root of the subtree, which should be a peak in the MMR if valid
+func hash_subtree_path_keccak{
+    range_check_ptr,
+    bitwise_ptr: BitwiseBuiltin*,
+    keccak_ptr: KeccakBuiltin*,
+    pow2_array: felt*,
+}(
+    element: Uint256, height: felt, position: felt, inclusion_proof: felt*, inclusion_proof_len: felt
+) -> (peak: Uint256) {
+    alloc_locals;
+    if (inclusion_proof_len == 0) {
+        return (peak=element);
+    }
+
+    let position_height = compute_height_pre_alloc_pow2(position);
+    let next_height = compute_height_pre_alloc_pow2(position + 1);
+
+
+    if (next_height == position_height + 1) {
+        // element is the right child -> hash(sibling, element)
+        local sibling: Uint256;
+        assert sibling.low = [inclusion_proof];
+        assert sibling.high = [inclusion_proof + 1];
+
+        let (keccak_input: felt*) = alloc();
+        let inputs_start = keccak_input;
+        keccak_add_uint256{inputs=keccak_input}(num=sibling, bigend=1);
+        keccak_add_uint256{inputs=keccak_input}(num=element, bigend=1);
+        let (new_element: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+        let (new_element) = uint256_reverse_endian(new_element);
+
+        return hash_subtree_path_keccak(
+            new_element,
+            height + 1,
+            position + 1,
+            inclusion_proof=inclusion_proof + 2,
+            inclusion_proof_len=inclusion_proof_len - 1,
+        );
+    } else {
+        // element is the left child -> hash(element, sibling)
+        local sibling: Uint256;
+        assert sibling.low = [inclusion_proof];
+        assert sibling.high = [inclusion_proof + 1];
+
+        let (keccak_input: felt*) = alloc();
+        let inputs_start = keccak_input;
+        keccak_add_uint256{inputs=keccak_input}(num=element, bigend=1);
+        keccak_add_uint256{inputs=keccak_input}(num=sibling, bigend=1);
+        let (new_element: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+        let (new_element) = uint256_reverse_endian(new_element);
+
+        tempvar position = position + pow2_array[height + 1];  // next position when current is left child
+        return hash_subtree_path_keccak(
+            new_element,
+            height + 1,
+            position,
+            inclusion_proof=inclusion_proof + 2,
+            inclusion_proof_len=inclusion_proof_len - 1,
+        );
+    }
+}
