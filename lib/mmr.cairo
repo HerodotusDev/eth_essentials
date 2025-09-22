@@ -562,6 +562,54 @@ func hash_subtree_path{range_check_ptr, poseidon_ptr: PoseidonBuiltin*, pow2_arr
     }
 }
 
+// Keccak-only bagging of peaks: Keccak(peak1, Keccak(peak2, ...))
+func bag_peaks_keccak{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*}(
+    peaks_keccak: Uint256*, peaks_len: felt
+) -> (bag_peaks_keccak: Uint256) {
+    alloc_locals;
+
+    assert_le(1, peaks_len);
+    if (peaks_len == 1) {
+        return ([peaks_keccak],);
+    }
+
+    let last_peak_keccak = [peaks_keccak];
+    let (rec_keccak) = bag_peaks_keccak(peaks_keccak + 2, peaks_len - 1);
+
+    let (keccak_input: felt*) = alloc();
+    let inputs_start = keccak_input;
+
+    // Add peakN and rec result in big-endian order (32 bytes each)
+    keccak_add_uint256{inputs=keccak_input}(num=last_peak_keccak, bigend=1);
+    keccak_add_uint256{inputs=keccak_input}(num=rec_keccak, bigend=1);
+
+    let (res_keccak: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+    let (res_keccak) = uint256_reverse_endian(res_keccak);
+    return (bag_peaks_keccak=res_keccak);
+}
+
+// Hashes the mmr_size along with the Keccak bag to create the Keccak MMR root
+// - mmr_root: Keccak(mmr_size, Keccak(peak1, Keccak(peak2, ...)))
+func mmr_root_keccak{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*}(
+    peaks_keccak: Uint256*, mmr_size: felt, peaks_len: felt
+) -> (mmr_root: Uint256) {
+    alloc_locals;
+
+    let (bag_peak) = bag_peaks_keccak(peaks_keccak, peaks_len);
+
+    let (keccak_input: felt*) = alloc();
+    let inputs_start = keccak_input;
+
+    // mmr_size as Uint256 (low=mmr_size, high=0) in big-endian
+    keccak_add_uint256{inputs=keccak_input}(num=Uint256(mmr_size, 0), bigend=1);
+    keccak_add_uint256{inputs=keccak_input}(num=bag_peak, bigend=1);
+
+    let (root_keccak: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+    let (root_keccak) = uint256_reverse_endian(root_keccak);
+
+    return (mmr_root=root_keccak);
+}
+
 
 // Hashes a merkle path for Keccak-based MMR with Uint256 nodes.
 // Params:
