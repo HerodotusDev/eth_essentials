@@ -610,7 +610,6 @@ func mmr_root_keccak{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: 
     return (mmr_root=root_keccak);
 }
 
-
 // Hashes a merkle path for Keccak-based MMR with Uint256 nodes.
 // Params:
 // - element: Uint256 - the current node's value
@@ -621,12 +620,13 @@ func mmr_root_keccak{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: 
 // Returns:
 // - peak: Uint256 - the root of the subtree, which should be a peak in the MMR if valid
 func hash_subtree_path_keccak{
-    range_check_ptr,
-    bitwise_ptr: BitwiseBuiltin*,
-    keccak_ptr: KeccakBuiltin*,
-    pow2_array: felt*,
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*, pow2_array: felt*
 }(
-    element: Uint256, height: felt, position: felt, inclusion_proof: felt*, inclusion_proof_len: felt
+    element: Uint256,
+    height: felt,
+    position: felt,
+    inclusion_proof: felt*,
+    inclusion_proof_len: felt,
 ) -> (peak: Uint256) {
     alloc_locals;
     if (inclusion_proof_len == 0) {
@@ -635,7 +635,6 @@ func hash_subtree_path_keccak{
 
     let position_height = compute_height_pre_alloc_pow2(position);
     let next_height = compute_height_pre_alloc_pow2(position + 1);
-
 
     if (next_height == position_height + 1) {
         // element is the right child -> hash(sibling, element)
