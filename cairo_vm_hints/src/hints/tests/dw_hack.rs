@@ -1,10 +1,13 @@
-use crate::utils::{get_value, write_value};
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
 use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData,
+    types::{exec_scope::ExecutionScopes, relocatable::MaybeRelocatable},
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+
+use crate::utils::{get_value, write_value};
 
 pub const HINT_BIT_LENGTH_ASSIGN_140: &str = "ids.bit_length = 140";
 
@@ -14,7 +17,12 @@ pub fn hint_bit_length_assign_140(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    write_value("bit_length", MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x8C")), vm, hint_data)?;
+    write_value(
+        "bit_length",
+        MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x8C")),
+        vm,
+        hint_data,
+    )?;
 
     Ok(())
 }
@@ -40,7 +48,12 @@ pub fn hint_bit_length_assign_2500(
     hint_data: &HintProcessorData,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    write_value("bit_length", MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x9C4")), vm, hint_data)?;
+    write_value(
+        "bit_length",
+        MaybeRelocatable::Int(Felt252::from_hex_unchecked("0x9C4")),
+        vm,
+        hint_data,
+    )?;
 
     Ok(())
 }

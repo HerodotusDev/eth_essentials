@@ -1,11 +1,13 @@
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
-use rand::{thread_rng, Rng};
-use starknet_types_core::felt::Felt;
 use std::collections::{HashMap, HashSet};
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData,
+    types::{exec_scope::ExecutionScopes, relocatable::MaybeRelocatable},
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+use rand::Rng;
+use starknet_types_core::felt::Felt;
 
 use crate::utils::{get_value, write_vector};
 
@@ -42,7 +44,7 @@ pub fn hint_generate_random(
         num_sizes
     );
 
-    let mut rng = thread_rng();
+    let mut rng = rand::thread_rng();
     let mut input_array = vec![];
     let mut expected_output = vec![];
     for _ in 0..num_sizes {
@@ -72,7 +74,10 @@ pub fn hint_generate_sequential(
     // vm.segments.write_arg(vm.seg, arg)
     let num_elems: u64 = get_value("num_elems", vm, hint_data)?.try_into().unwrap();
 
-    println!("Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {})...", num_elems);
+    println!(
+        "Testing is_valid_mmr_size by creating the mmr for all sizes in [0, {})...",
+        num_elems
+    );
 
     let mut valid_mmr_sizes = HashSet::new();
     let mut mmr_size = 0;

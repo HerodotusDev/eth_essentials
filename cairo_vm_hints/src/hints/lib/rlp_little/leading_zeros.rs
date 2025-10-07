@@ -1,10 +1,15 @@
-use crate::utils;
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_relocatable_from_var_name;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
 use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::{
+        builtin_hint_processor_definition::HintProcessorData, hint_utils::get_relocatable_from_var_name,
+    },
+    types::exec_scope::ExecutionScopes,
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+
+use crate::utils;
 
 pub const HINT_EXPECTED_LEADING_ZEROES: &str = "from tools.py.utils import parse_int_to_bytes, count_leading_zero_nibbles_from_hex\nreversed_hex = parse_int_to_bytes(ids.x.low + (2 ** 128) * ids.x.high)[::-1].hex()\nexpected_leading_zeroes = count_leading_zero_nibbles_from_hex(reversed_hex[1:] if ids.cut_nibble == 1 else reversed_hex)";
 
