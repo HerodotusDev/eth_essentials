@@ -25,7 +25,7 @@ func main{
     output_ptr: felt*,
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
-    keccak_ptr: KeccakBuiltin*,
+    keccak_ptr: felt*,
     poseidon_ptr: PoseidonBuiltin*,
 }() {
     alloc_locals;

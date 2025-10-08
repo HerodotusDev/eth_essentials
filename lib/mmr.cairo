@@ -1,4 +1,4 @@
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, PoseidonBuiltin, KeccakBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, PoseidonBuiltin
 from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.alloc import alloc
@@ -6,7 +6,7 @@ from starkware.cairo.common.builtin_poseidon.poseidon import poseidon_hash
 from starkware.cairo.common.dict_access import DictAccess
 from starkware.cairo.common.dict import dict_write, dict_read
 from starkware.cairo.common.uint256 import Uint256, uint256_reverse_endian
-from starkware.cairo.common.builtin_keccak.keccak import keccak
+from starkware.cairo.common.cairo_keccak.keccak import cairo_keccak as keccak
 from starkware.cairo.common.keccak_utils.keccak_utils import keccak_add_uint256
 from lib.utils import get_felt_bitlength
 
@@ -337,7 +337,7 @@ func get_roots{
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
     poseidon_ptr: PoseidonBuiltin*,
-    keccak_ptr: KeccakBuiltin*,
+    keccak_ptr: felt*,
     mmr_array_poseidon: felt*,
     mmr_array_keccak: Uint256*,
     mmr_array_len: felt,
@@ -451,7 +451,7 @@ func bag_peaks{
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
     poseidon_ptr: PoseidonBuiltin*,
-    keccak_ptr: KeccakBuiltin*,
+    keccak_ptr: felt*,
 }(peaks_poseidon: felt*, peaks_keccak: Uint256*, peaks_len: felt) -> (
     bag_peaks_poseidon: felt, bag_peaks_keccak: Uint256
 ) {
