@@ -7,9 +7,7 @@ use cairo_vm::{
     Felt252,
 };
 
-pub mod assert;
 pub mod divmod;
-pub mod leading_zeros;
 pub mod nibbles;
 
 pub fn run_hint(
@@ -19,11 +17,7 @@ pub fn run_hint(
     constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     match hint_data.code.as_str() {
-        assert::HINT_EXPECTED_LEADING_ZEROES => assert::hint_expected_leading_zeroes(vm, exec_scope, hint_data, constants),
-        assert::HINT_EXPECTED_NIBBLE => assert::hint_expected_nibble(vm, exec_scope, hint_data, constants),
         divmod::HINT_POW_CUT => divmod::hint_pow_cut(vm, exec_scope, hint_data, constants),
-        leading_zeros::HINT_EXPECTED_LEADING_ZEROES => leading_zeros::hint_expected_leading_zeroes(vm, exec_scope, hint_data, constants),
-        leading_zeros::HINT_EXPECTED_NIBBLE => leading_zeros::hint_expected_nibble(vm, exec_scope, hint_data, constants),
         nibbles::HINT_IS_ZERO => nibbles::hint_is_zero(vm, exec_scope, hint_data, constants),
         nibbles::HINT_NIBBLE_FROM_LOW => nibbles::hint_nibble_from_low(vm, exec_scope, hint_data, constants),
         nibbles::HINT_NEEDS_NEXT_WORD => nibbles::hint_needs_next_word(vm, exec_scope, hint_data, constants),

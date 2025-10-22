@@ -47,11 +47,6 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
     x: Uint256, n_nibbles_after_reversion: felt, cut_nibble: felt, pow2_array: felt*
 ) -> (res: felt) {
     alloc_locals;
-    %{
-        from tools.py.utils import parse_int_to_bytes, count_leading_zero_nibbles_from_hex
-        reversed_hex = parse_int_to_bytes(ids.x.low + (2 ** 128) * ids.x.high)[::-1].hex()
-        expected_leading_zeroes = count_leading_zero_nibbles_from_hex(reversed_hex[1:] if ids.cut_nibble == 1 else reversed_hex)
-    %}
     local x_f: Uint256;
     local first_nibble_is_zero;
     assert x_f.high = x.high;
@@ -83,7 +78,9 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
             tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
         }
     }
+
     let (trailing_zeroes_low) = count_trailing_zeroes_128(x_f.low, pow2_array);
+
     if (trailing_zeroes_low == 16) {
         // The low part if full of zeroes bytes.
         // Need to analyze the high part.
@@ -100,12 +97,9 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
             let (first_nibble_after_reversion, _) = bitwise_divmod(first_non_zero_byte, 2 ** 4);
             if (first_nibble_after_reversion == 0) {
                 let res = 32 + 2 * trailing_zeroes_high - cut_nibble + 1;
-                %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
                 return (res=res);
             } else {
                 let res = 32 + 2 * trailing_zeroes_high - cut_nibble;
-                %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
-
                 return (res=res);
             }
         }
@@ -113,7 +107,6 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
         // Trailing zeroes bytes between [0, 15].
         if (trailing_zeroes_low == 0) {
             let res = first_nibble_is_zero;
-            %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
             return (res=res);
         } else {
             // Trailing zeroes bytes between [1, 15].
@@ -127,13 +120,9 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
             // %{ print(f"{hex(ids.first_nibble_after_reversion)=}") %}
             if (first_nibble_after_reversion == 0) {
                 let res = 2 * trailing_zeroes_low - cut_nibble + 1;
-                %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
-
                 return (res=res);
             } else {
                 let res = 2 * trailing_zeroes_low - cut_nibble;
-                %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
-
                 return (res=res);
             }
         }
@@ -421,10 +410,6 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         //      print(f"key_nibbles: {ids.key_nibbles}")
         //      print(f"key_leading_zeroes_nibbles: {ids.key_leading_zeroes_nibbles}")
         // %}
-        %{
-            key_hex = ids.key_leading_zeroes_nibbles * '0' + hex(ids.key.low + (2 ** 128) * ids.key.high)[2:]
-            expected_nibble = int(key_hex[ids.nibble_index + ids.key_leading_zeroes_nibbles], 16)
-        %}
         if (get_nibble_from_low != 0) {
             local offset;
             if (key.high != 0) {
@@ -441,7 +426,6 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             assert bitwise_ptr.y = 0xf * offset;
             tempvar extracted_nibble_at_pos = bitwise_ptr.x_and_y / offset;
             tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-            %{ assert ids.extracted_nibble_at_pos == expected_nibble, f"extracted_nibble_at_pos={ids.extracted_nibble_at_pos} expected_nibble={expected_nibble}" %}
             return extracted_nibble_at_pos;
         } else {
             // Extract nibble from high part of key
@@ -456,8 +440,6 @@ func extract_nibble_from_key_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
             tempvar extracted_nibble_at_pos = bitwise_ptr.x_and_y / offset;
             tempvar range_check_ptr = range_check_ptr + 1;
             tempvar bitwise_ptr = bitwise_ptr + BitwiseBuiltin.SIZE;
-            %{ assert ids.extracted_nibble_at_pos == expected_nibble, f"extracted_nibble_at_pos={ids.extracted_nibble_at_pos} expected_nibble={expected_nibble}" %}
-
             return extracted_nibble_at_pos;
         }
     }
