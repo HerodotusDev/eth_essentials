@@ -99,11 +99,11 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
             );
             let (first_nibble_after_reversion, _) = bitwise_divmod(first_non_zero_byte, 2 ** 4);
             if (first_nibble_after_reversion == 0) {
-                let res = 32 + 2 * trailing_zeroes_high - cut_nibble + 1;
+                tempvar res = 32 + 2 * trailing_zeroes_high - cut_nibble + 1;
                 %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
                 return (res=res);
             } else {
-                let res = 32 + 2 * trailing_zeroes_high - cut_nibble;
+                tempvar res = 32 + 2 * trailing_zeroes_high - cut_nibble;
                 %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
 
                 return (res=res);
@@ -126,12 +126,12 @@ func count_leading_zeroes_from_uint256_le_before_reversion{bitwise_ptr: BitwiseB
             let (first_nibble_after_reversion, _) = bitwise_divmod(first_non_zero_byte, 2 ** 4);
             // %{ print(f"{hex(ids.first_nibble_after_reversion)=}") %}
             if (first_nibble_after_reversion == 0) {
-                let res = 2 * trailing_zeroes_low - cut_nibble + 1;
+                tempvar res = 2 * trailing_zeroes_low - cut_nibble + 1;
                 %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
 
                 return (res=res);
             } else {
-                let res = 2 * trailing_zeroes_low - cut_nibble;
+                tempvar res = 2 * trailing_zeroes_low - cut_nibble;
                 %{ assert ids.res == expected_leading_zeroes, f"Expected {expected_leading_zeroes} but got {ids.res}" %}
 
                 return (res=res);
