@@ -620,7 +620,7 @@ func mmr_root_keccak{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: 
 // Returns:
 // - peak: Uint256 - the root of the subtree, which should be a peak in the MMR if valid
 func hash_subtree_path_keccak{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*, pow2_array: felt*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: felt*, pow2_array: felt*
 }(
     element: Uint256,
     height: felt,
