@@ -20,7 +20,6 @@ pub fn hint_write_2(
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
     for (idx, byte) in word.to_bytes_be().into_iter().rev().take(2).rev().enumerate() {
-        println!("2 {}", byte);
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
     }
