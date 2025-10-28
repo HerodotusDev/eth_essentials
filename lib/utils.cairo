@@ -1,4 +1,5 @@
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, PoseidonBuiltin
+from starkware.cairo.common.builtin_poseidon.poseidon import poseidon_hash
 from starkware.cairo.common.registers import get_label_location
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.dict_access import DictAccess
@@ -287,6 +288,21 @@ func write_felt_array_to_dict_keys{dict_end: DictAccess*}(array: felt*, index: f
     } else {
         dict_write{dict_ptr=dict_end}(key=array[index], new_value=1);
         return write_felt_array_to_dict_keys(array, index - 1);
+    }
+}
+
+// Write the elements of the array as key in the dictionary and assign the value 0 to each key.
+// Used to check that an element in the dict is present by checking dict[key] == 1.
+// Use with a default_dict with default_value = 0.
+// If the element is present, the value will be 1.
+// If the element is not present, the value will be 0.
+func write_uint256_array_to_dict_keys{dict_end: DictAccess*, poseidon_ptr: PoseidonBuiltin*}(array: Uint256*, index: felt) {
+    if (index == -1) {
+        return ();
+    } else {
+        let (key) = poseidon_hash(x=array[index].low, y=array[index].high);
+        dict_write{dict_ptr=dict_end}(key=key, new_value=1);
+        return write_uint256_array_to_dict_keys(array, index - 1);
     }
 }
 
