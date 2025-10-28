@@ -5,30 +5,35 @@ pub mod hints;
 pub mod mmr;
 pub mod utils;
 
+use std::{
+    io::{self, Write},
+    path::{Path, PathBuf},
+};
+
 use bincode::enc::write::Writer;
-use cairo_vm::air_public_input::PublicInputError;
-use cairo_vm::cairo_run::{self, EncodeTraceError};
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor;
 // TODO
 // #[cfg(feature = "with_tracer")]
 // use cairo_vm::serde::deserialize_program::DebugInfo;
 use cairo_vm::types::layout::CairoLayoutParams;
-use cairo_vm::types::layout_name::LayoutName;
-use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
-use cairo_vm::vm::errors::trace_errors::TraceError;
-use cairo_vm::vm::errors::vm_errors::VirtualMachineError;
-use cairo_vm::vm::runners::cairo_pie::CairoPie;
 // #[cfg(feature = "with_tracer")]
 // use cairo_vm::vm::runners::cairo_runner::CairoRunner;
 use cairo_vm::vm::runners::cairo_runner::RunResources;
-use hint_processor::ExtendedHintProcessor;
+use cairo_vm::{
+    air_public_input::PublicInputError,
+    cairo_run::{self, EncodeTraceError},
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor,
+    types::layout_name::LayoutName,
+    vm::{
+        errors::{cairo_run_errors::CairoRunError, trace_errors::TraceError, vm_errors::VirtualMachineError},
+        runners::cairo_pie::CairoPie,
+    },
+};
 // #[cfg(feature = "with_tracer")]
 // use cairo_vm_tracer::error::trace_data_errors::TraceDataError;
 // #[cfg(feature = "with_tracer")]
 // use cairo_vm_tracer::tracer::run_tracer;
 use clap::{Parser, ValueHint};
-use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use hint_processor::ExtendedHintProcessor;
 use thiserror::Error;
 
 // #[cfg(feature = "with_mimalloc")]
@@ -213,7 +218,10 @@ fn run(args: impl Iterator<Item = String>) -> Result<(), Error> {
     }
 
     if let Some(ref trace_path) = args.trace_file {
-        let relocated_trace = cairo_runner.relocated_trace.as_ref().ok_or(Error::Trace(TraceError::TraceNotRelocated))?;
+        let relocated_trace = cairo_runner
+            .relocated_trace
+            .as_ref()
+            .ok_or(Error::Trace(TraceError::TraceNotRelocated))?;
 
         let trace_file = std::fs::File::create(trace_path)?;
         let mut trace_writer = FileWriter::new(io::BufWriter::with_capacity(3 * 1024 * 1024, trace_file));

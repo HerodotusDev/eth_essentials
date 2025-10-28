@@ -1,10 +1,13 @@
-use crate::utils;
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
 use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData,
+    types::{exec_scope::ExecutionScopes, relocatable::MaybeRelocatable},
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+
+use crate::utils;
 
 pub const HINT_WRITE_2: &str = "from tools.py.hints import write_word_to_memory\nwrite_word_to_memory(ids.word, 2, memory, ap)";
 
@@ -17,7 +20,6 @@ pub fn hint_write_2(
     let word: Felt252 = utils::get_value("word", vm, hint_data)?;
     let ap = vm.get_ap();
     for (idx, byte) in word.to_bytes_be().into_iter().rev().take(2).rev().enumerate() {
-        println!("2 {}", byte);
         vm.insert_value((ap + idx)?, MaybeRelocatable::Int(byte.into()))
             .map_err(HintError::Memory)?;
     }

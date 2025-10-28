@@ -25,7 +25,12 @@ pub fn write_value(
     insert_value_from_var_name(var_name, value, vm, &hint_data.ids_data, &hint_data.ap_tracking)
 }
 
-pub fn write_struct(var_name: &str, values: &[MaybeRelocatable], vm: &mut VirtualMachine, hint_data: &HintProcessorData) -> Result<(), HintError> {
+pub fn write_struct(
+    var_name: &str,
+    values: &[MaybeRelocatable],
+    vm: &mut VirtualMachine,
+    hint_data: &HintProcessorData,
+) -> Result<(), HintError> {
     vm.segments.load_data(
         get_relocatable_from_var_name(var_name, vm, &hint_data.ids_data, &hint_data.ap_tracking)?,
         values,
@@ -33,9 +38,16 @@ pub fn write_struct(var_name: &str, values: &[MaybeRelocatable], vm: &mut Virtua
     Ok(())
 }
 
-pub fn write_vector(var_name: &str, vector: &[MaybeRelocatable], vm: &mut VirtualMachine, hint_data: &HintProcessorData) -> Result<(), HintError> {
-    vm.segments
-        .load_data(get_ptr_from_var_name(var_name, vm, &hint_data.ids_data, &hint_data.ap_tracking)?, vector)?;
+pub fn write_vector(
+    var_name: &str,
+    vector: &[MaybeRelocatable],
+    vm: &mut VirtualMachine,
+    hint_data: &HintProcessorData,
+) -> Result<(), HintError> {
+    vm.segments.load_data(
+        get_ptr_from_var_name(var_name, vm, &hint_data.ids_data, &hint_data.ap_tracking)?,
+        vector,
+    )?;
     Ok(())
 }
 

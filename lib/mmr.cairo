@@ -1,4 +1,4 @@
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, PoseidonBuiltin, KeccakBuiltin
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, PoseidonBuiltin
 from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.alloc import alloc
@@ -6,7 +6,7 @@ from starkware.cairo.common.builtin_poseidon.poseidon import poseidon_hash
 from starkware.cairo.common.dict_access import DictAccess
 from starkware.cairo.common.dict import dict_write, dict_read
 from starkware.cairo.common.uint256 import Uint256, uint256_reverse_endian
-from starkware.cairo.common.builtin_keccak.keccak import keccak
+from starkware.cairo.common.cairo_keccak.keccak import cairo_keccak as keccak
 from starkware.cairo.common.keccak_utils.keccak_utils import keccak_add_uint256
 from lib.utils import get_felt_bitlength
 
@@ -337,7 +337,7 @@ func get_roots{
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
     poseidon_ptr: PoseidonBuiltin*,
-    keccak_ptr: KeccakBuiltin*,
+    keccak_ptr: felt*,
     mmr_array_poseidon: felt*,
     mmr_array_keccak: Uint256*,
     mmr_array_len: felt,
@@ -451,7 +451,7 @@ func bag_peaks{
     range_check_ptr,
     bitwise_ptr: BitwiseBuiltin*,
     poseidon_ptr: PoseidonBuiltin*,
-    keccak_ptr: KeccakBuiltin*,
+    keccak_ptr: felt*,
 }(peaks_poseidon: felt*, peaks_keccak: Uint256*, peaks_len: felt) -> (
     bag_peaks_poseidon: felt, bag_peaks_keccak: Uint256
 ) {
@@ -501,6 +501,32 @@ func bag_peaks_poseidon{range_check_ptr, poseidon_ptr: PoseidonBuiltin*}(
     return (bag_peaks_poseidon=res_poseidon);
 }
 
+// Keccak-only bagging of peaks: Keccak(peak1, Keccak(peak2, ...))
+func bag_peaks_keccak{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: felt*}(
+    peaks_keccak: Uint256*, peaks_len: felt
+) -> (bag_peaks_keccak: Uint256) {
+    alloc_locals;
+
+    assert_le(1, peaks_len);
+    if (peaks_len == 1) {
+        return ([peaks_keccak],);
+    }
+
+    let last_peak_keccak = [peaks_keccak];
+    let (rec_keccak) = bag_peaks_keccak(peaks_keccak + 2, peaks_len - 1);
+
+    let (keccak_input: felt*) = alloc();
+    let inputs_start = keccak_input;
+
+    // Add peakN and rec result in big-endian order (32 bytes each)
+    keccak_add_uint256{inputs=keccak_input}(num=last_peak_keccak, bigend=1);
+    keccak_add_uint256{inputs=keccak_input}(num=rec_keccak, bigend=1);
+
+    let (res_keccak: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+    let (res_keccak) = uint256_reverse_endian(res_keccak);
+    return (bag_peaks_keccak=res_keccak);
+}
+
 // Hashes the mmr_size along with poseidon bag to create the mmr_root
 // Params:
 // - peaks_poseidon: the peaks of the MMR to hash together
@@ -516,6 +542,28 @@ func mmr_root_poseidon{range_check_ptr, poseidon_ptr: PoseidonBuiltin*}(
     return (mmr_root=root);
 }
 
+// Hashes the mmr_size along with the Keccak bag to create the Keccak MMR root
+// - mmr_root: Keccak(mmr_size, Keccak(peak1, Keccak(peak2, ...)))
+func mmr_root_keccak{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: felt*}(
+    peaks_keccak: Uint256*, mmr_size: felt, peaks_len: felt
+) -> (mmr_root: Uint256) {
+    alloc_locals;
+
+    let (bag_peak) = bag_peaks_keccak(peaks_keccak, peaks_len);
+
+    let (keccak_input: felt*) = alloc();
+    let inputs_start = keccak_input;
+
+    // mmr_size as Uint256 (low=mmr_size, high=0) in big-endian
+    keccak_add_uint256{inputs=keccak_input}(num=Uint256(mmr_size, 0), bigend=1);
+    keccak_add_uint256{inputs=keccak_input}(num=bag_peak, bigend=1);
+
+    let (root_keccak: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+    let (root_keccak) = uint256_reverse_endian(root_keccak);
+
+    return (mmr_root=root_keccak);
+}
+
 // Hashes a merkle path, along with its leaf. The path is a list of nodes from the leaf to the root.
 // Params:
 // - element: felt - the current node's value
@@ -525,7 +573,7 @@ func mmr_root_poseidon{range_check_ptr, poseidon_ptr: PoseidonBuiltin*}(
 // - inclusion_proof_len: felt - the length of the inclusion_proof
 // Returns:
 // - peak: felt - the root of the subtree, which should be a peak in the MMR if valid
-func hash_subtree_path{range_check_ptr, poseidon_ptr: PoseidonBuiltin*, pow2_array: felt*}(
+func hash_subtree_path_poseidon{range_check_ptr, poseidon_ptr: PoseidonBuiltin*, pow2_array: felt*}(
     element: felt, height: felt, position: felt, inclusion_proof: felt*, inclusion_proof_len: felt
 ) -> (peak: felt) {
     alloc_locals;
@@ -539,7 +587,7 @@ func hash_subtree_path{range_check_ptr, poseidon_ptr: PoseidonBuiltin*, pow2_arr
         // element is the right child
         let (element) = poseidon_hash([inclusion_proof], element);
 
-        return hash_subtree_path(
+        return hash_subtree_path_poseidon(
             element,
             height + 1,
             position + 1,
@@ -552,11 +600,81 @@ func hash_subtree_path{range_check_ptr, poseidon_ptr: PoseidonBuiltin*, pow2_arr
 
         tempvar element = element;
         tempvar position = position + pow2_array[height + 1];  // since we are the left child, we need to derive the next position
-        return hash_subtree_path(
+        return hash_subtree_path_poseidon(
             element,
             height + 1,
             position,
             inclusion_proof=inclusion_proof + 1,
+            inclusion_proof_len=inclusion_proof_len - 1,
+        );
+    }
+}
+
+// Hashes a merkle path for Keccak-based MMR with Uint256 nodes.
+// Params:
+// - element: Uint256 - the current node's value
+// - height: felt - the current height of the node
+// - position: felt - the current position of the node in the tree
+// - inclusion_proof: felt* - the list of sibling nodes from the leaf to the root
+// - inclusion_proof_len: felt - the length of the inclusion_proof
+// Returns:
+// - peak: Uint256 - the root of the subtree, which should be a peak in the MMR if valid
+func hash_subtree_path_keccak{
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: felt*, pow2_array: felt*
+}(
+    element: Uint256,
+    height: felt,
+    position: felt,
+    inclusion_proof: felt*,
+    inclusion_proof_len: felt,
+) -> (peak: Uint256) {
+    alloc_locals;
+    if (inclusion_proof_len == 0) {
+        return (peak=element);
+    }
+
+    let position_height = compute_height_pre_alloc_pow2(position);
+    let next_height = compute_height_pre_alloc_pow2(position + 1);
+
+    if (next_height == position_height + 1) {
+        // element is the right child -> hash(sibling, element)
+        local sibling: Uint256;
+        assert sibling.low = [inclusion_proof];
+        assert sibling.high = [inclusion_proof + 1];
+
+        let (keccak_input: felt*) = alloc();
+        let inputs_start = keccak_input;
+        keccak_add_uint256{inputs=keccak_input}(num=sibling, bigend=1);
+        keccak_add_uint256{inputs=keccak_input}(num=element, bigend=1);
+        let (new_element: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+        let (new_element) = uint256_reverse_endian(new_element);
+
+        return hash_subtree_path_keccak(
+            new_element,
+            height + 1,
+            position + 1,
+            inclusion_proof=inclusion_proof + 2,
+            inclusion_proof_len=inclusion_proof_len - 1,
+        );
+    } else {
+        // element is the left child -> hash(element, sibling)
+        local sibling: Uint256;
+        assert sibling.low = [inclusion_proof];
+        assert sibling.high = [inclusion_proof + 1];
+
+        let (keccak_input: felt*) = alloc();
+        let inputs_start = keccak_input;
+        keccak_add_uint256{inputs=keccak_input}(num=element, bigend=1);
+        keccak_add_uint256{inputs=keccak_input}(num=sibling, bigend=1);
+        let (new_element: Uint256) = keccak(inputs=inputs_start, n_bytes=2 * 32);
+        let (new_element) = uint256_reverse_endian(new_element);
+
+        tempvar position = position + pow2_array[height + 1];  // next position when current is left child
+        return hash_subtree_path_keccak(
+            new_element,
+            height + 1,
+            position,
+            inclusion_proof=inclusion_proof + 2,
             inclusion_proof_len=inclusion_proof_len - 1,
         );
     }
