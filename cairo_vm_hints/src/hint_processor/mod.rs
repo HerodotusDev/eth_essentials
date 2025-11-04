@@ -7,10 +7,7 @@ use cairo_vm::{
     },
     types::exec_scope::ExecutionScopes,
     vm::{errors::hint_errors::HintError, runners::cairo_runner::ResourceTracker, vm_core::VirtualMachine},
-    Felt252,
 };
-use starknet_types_core::felt::Felt;
-use std::collections::HashMap;
 use std::{any::Any, rc::Rc};
 
 #[derive(Default)]
@@ -28,11 +25,10 @@ impl HintProcessorLogic for CustomHintProcessor {
         vm: &mut VirtualMachine,
         exec_scopes: &mut ExecutionScopes,
         hint_data: &Box<dyn Any>,
-        constants: &HashMap<String, Felt252>,
     ) -> Result<(), HintError> {
         let hint_data = hint_data.downcast_ref::<HintProcessorData>().ok_or(HintError::WrongHintData)?;
 
-        hints::run_hint(vm, exec_scopes, hint_data, constants)
+        hints::run_hint(vm, exec_scopes, hint_data, &*hint_data.constants)
     }
 }
 
@@ -68,7 +64,6 @@ impl HintProcessorLogic for ExtendedHintProcessor {
         _vm: &mut VirtualMachine,
         _exec_scopes: &mut ExecutionScopes,
         _hint_data: &Box<dyn Any>,
-        _constants: &HashMap<String, Felt>,
     ) -> Result<(), HintError> {
         unreachable!();
     }
@@ -78,16 +73,15 @@ impl HintProcessorLogic for ExtendedHintProcessor {
         vm: &mut VirtualMachine,
         exec_scopes: &mut ExecutionScopes,
         hint_data: &Box<dyn Any>,
-        constants: &HashMap<String, Felt>,
     ) -> Result<HintExtension, HintError> {
-        match self.custom_hint_processor.execute_hint_extensive(vm, exec_scopes, hint_data, constants) {
+        match self.custom_hint_processor.execute_hint_extensive(vm, exec_scopes, hint_data) {
             Err(HintError::UnknownHint(_)) => {}
             result => {
                 return result;
             }
         }
 
-        self.builtin_hint_processor.execute_hint_extensive(vm, exec_scopes, hint_data, constants)
+        self.builtin_hint_processor.execute_hint_extensive(vm, exec_scopes, hint_data)
     }
 }
 
