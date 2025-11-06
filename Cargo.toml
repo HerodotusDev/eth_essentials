@@ -6,7 +6,7 @@ members = ["cairo_vm_hints"]
 
 [workspace.dependencies]
 bincode = { version = "2.0.1", default-features = false, features = ["serde"]}
-cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm", tag = "v2.5.0", features = ["extensive_hints", "clap", "cairo-1-hints", "mod_builtin"] }
+cairo-vm = { git = "https://github.com/lakewik/cairo-vm", rev = "11ec1e3e69650d517680f6dba60b92cfcb1093e9", features = ["extensive_hints", "clap", "cairo-1-hints", "mod_builtin"] }
 clap = { version = "4.3.10", features = ["derive"] }
 hex = "0.4.3"
 num-bigint = "0.4.6"
