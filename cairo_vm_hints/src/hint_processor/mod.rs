@@ -1,17 +1,16 @@
-use crate::hints;
+use std::{any::Any, collections::HashMap, rc::Rc};
+
 use cairo_vm::{
     hint_processor::{
         builtin_hint_processor::builtin_hint_processor_definition::{BuiltinHintProcessor, HintFunc, HintProcessorData},
-        hint_processor_definition::HintExtension,
-        hint_processor_definition::HintProcessorLogic,
+        hint_processor_definition::{HintExtension, HintProcessorLogic},
     },
     types::exec_scope::ExecutionScopes,
     vm::{errors::hint_errors::HintError, runners::cairo_runner::ResourceTracker, vm_core::VirtualMachine},
     Felt252,
 };
-use starknet_types_core::felt::Felt;
-use std::collections::HashMap;
-use std::{any::Any, rc::Rc};
+
+use crate::hints;
 
 #[derive(Default)]
 pub struct CustomHintProcessor;
@@ -68,7 +67,7 @@ impl HintProcessorLogic for ExtendedHintProcessor {
         _vm: &mut VirtualMachine,
         _exec_scopes: &mut ExecutionScopes,
         _hint_data: &Box<dyn Any>,
-        _constants: &HashMap<String, Felt>,
+        _constants: &HashMap<String, Felt252>,
     ) -> Result<(), HintError> {
         unreachable!();
     }
@@ -78,16 +77,20 @@ impl HintProcessorLogic for ExtendedHintProcessor {
         vm: &mut VirtualMachine,
         exec_scopes: &mut ExecutionScopes,
         hint_data: &Box<dyn Any>,
-        constants: &HashMap<String, Felt>,
+        constants: &HashMap<String, Felt252>,
     ) -> Result<HintExtension, HintError> {
-        match self.custom_hint_processor.execute_hint_extensive(vm, exec_scopes, hint_data, constants) {
+        match self
+            .custom_hint_processor
+            .execute_hint_extensive(vm, exec_scopes, hint_data, constants)
+        {
             Err(HintError::UnknownHint(_)) => {}
             result => {
                 return result;
             }
         }
 
-        self.builtin_hint_processor.execute_hint_extensive(vm, exec_scopes, hint_data, constants)
+        self.builtin_hint_processor
+            .execute_hint_extensive(vm, exec_scopes, hint_data, constants)
     }
 }
 

@@ -1,14 +1,19 @@
-use crate::mmr::{Keccak, Mmr, Poseidon};
-use crate::utils::{split_u256, write_struct, write_value, write_vector};
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
+use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData,
+    types::{exec_scope::ExecutionScopes, relocatable::MaybeRelocatable},
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
 use num_bigint::{BigUint, RandBigInt};
 use num_traits::{Num, One};
-use rand::{thread_rng, Rng};
-use std::collections::HashMap;
+use rand::Rng;
+
+use crate::{
+    mmr::{Keccak, Mmr, Poseidon},
+    utils::{split_u256, write_struct, write_value, write_vector},
+};
 
 pub const TEST_CONSTRUCT_MMR: &str = "import random
 from tools.py.mmr import get_peaks, MMR, PoseidonHasher, KeccakHasher
@@ -83,9 +88,10 @@ pub fn test_construct_mmr(
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     let stark_prime = BigUint::from_str_radix("3618502788666131213697322783095070105623107215331596699973092056135872020481", 10).unwrap();
-    let two_pow_256 = BigUint::from_str_radix("115792089237316195423570985008687907853269984665640564039457584007913129639936", 10).unwrap();
+    let two_pow_256 =
+        BigUint::from_str_radix("115792089237316195423570985008687907853269984665640564039457584007913129639936", 10).unwrap();
 
-    let mut rng = thread_rng();
+    let mut rng = rand::thread_rng();
 
     let previous_n_values = rng.gen_range(1..=200);
     let n_values_to_append = rng.gen_range(1..=200);
@@ -100,7 +106,10 @@ pub fn test_construct_mmr(
 
     write_vector(
         "poseidon_hash_array",
-        &poseidon_hash_array.iter().map(|x| MaybeRelocatable::Int(x.into())).collect::<Vec<_>>(),
+        &poseidon_hash_array
+            .iter()
+            .map(|x| MaybeRelocatable::Int(x.into()))
+            .collect::<Vec<_>>(),
         vm,
         hint_data,
     )?;

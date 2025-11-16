@@ -1,11 +1,16 @@
-use crate::utils;
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_constant_from_var_name;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
-use starknet_types_core::felt::NonZeroFelt;
 use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::{
+        builtin_hint_processor_definition::HintProcessorData, hint_utils::get_constant_from_var_name,
+    },
+    types::exec_scope::ExecutionScopes,
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+use starknet_types_core::felt::NonZeroFelt;
+
+use crate::utils;
 
 const FELT_8: Felt252 = Felt252::from_hex_unchecked("0x08");
 

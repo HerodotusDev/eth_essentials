@@ -1,6 +1,6 @@
 from starkware.cairo.common.uint256 import Uint256, uint256_reverse_endian
-from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, KeccakBuiltin
-from starkware.cairo.common.builtin_keccak.keccak import keccak
+from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
+from starkware.cairo.common.cairo_keccak.keccak import cairo_keccak as keccak
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.registers import get_fp_and_pc
 from lib.rlp_little import (
@@ -37,7 +37,7 @@ from lib.utils import (
 // - the total length in bytes of the value.
 // If the proof passed is a non inclusion proof for the given key,
 // returns (value=rlp, value_len=-1).
-func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*}(
+func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: felt*}(
     mpt_proof: felt**,
     mpt_proof_bytes_len: felt*,
     mpt_proof_len: felt,
@@ -79,7 +79,7 @@ func verify_mpt_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr:
 // Inner function for verify_mpt_proof.
 // Should not be called directly.
 func verify_mpt_proof_inner{
-    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: KeccakBuiltin*
+    range_check_ptr, bitwise_ptr: BitwiseBuiltin*, keccak_ptr: felt*
 }(
     mpt_proof: felt**,
     mpt_proof_bytes_len: felt*,

@@ -34,13 +34,17 @@ fn is_long_list(value: Felt252) -> bool {
     FELT_248 <= value && value <= FELT_255
 }
 
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{get_integer_from_var_name, insert_value_from_var_name};
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
 use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::{
+        builtin_hint_processor_definition::HintProcessorData,
+        hint_utils::{get_integer_from_var_name, insert_value_from_var_name},
+    },
+    types::{exec_scope::ExecutionScopes, relocatable::MaybeRelocatable},
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
 
 pub const HINT_LONG_SHORT_LIST: &str = "from tools.py.hints import is_short_list, is_long_list\nif is_short_list(ids.list_prefix):\n    ids.long_short_list = 0\nelif is_long_list(ids.list_prefix):\n    ids.long_short_list = 1\nelse:\n    raise ValueError(f\"Invalid list prefix: {hex(ids.list_prefix)}. Not a recognized list type.\")";
 
@@ -100,7 +104,11 @@ pub fn hint_first_item_type(
             &hint_data.ids_data,
             &hint_data.ap_tracking,
         ),
-        value => Err(HintError::InvalidValue(Box::new(("Unsupported first item prefix", value, Felt252::ZERO)))),
+        value => Err(HintError::InvalidValue(Box::new((
+            "Unsupported first item prefix",
+            value,
+            Felt252::ZERO,
+        )))),
     }
 }
 

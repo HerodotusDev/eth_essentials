@@ -1,10 +1,14 @@
-use crate::utils;
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
-use num_bigint::BigUint;
 use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData,
+    types::exec_scope::ExecutionScopes,
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+use num_bigint::BigUint;
+
+use crate::utils;
 
 pub const HINT_CARRY: &str = "sum_low = ids.a.low + ids.b.low\nids.carry_low = 1 if sum_low >= ids.SHIFT else 0\nsum_high = ids.a.high + ids.b.high + ids.carry_low\nids.carry_high = 1 if sum_high >= ids.SHIFT else 0";
 

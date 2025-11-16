@@ -1,12 +1,16 @@
-use crate::utils;
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
 use std::collections::HashMap;
 
-pub const HINT_EXPECTED_LEADING_ZEROES: &str = "assert ids.res == expected_leading_zeroes, f\"Expected {expected_leading_zeroes} but got {ids.res}\"";
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData,
+    types::{exec_scope::ExecutionScopes, relocatable::MaybeRelocatable},
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+
+use crate::utils;
+
+pub const HINT_EXPECTED_LEADING_ZEROES: &str =
+    "assert ids.res == expected_leading_zeroes, f\"Expected {expected_leading_zeroes} but got {ids.res}\"";
 
 pub fn hint_expected_leading_zeroes(
     vm: &mut VirtualMachine,

@@ -1,12 +1,13 @@
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::relocatable::MaybeRelocatable;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
-use rand::Rng;
-use sha3::Digest;
-use sha3::Keccak256;
 use std::collections::HashMap;
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData,
+    types::{exec_scope::ExecutionScopes, relocatable::MaybeRelocatable},
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+use rand::Rng;
+use sha3::{Digest, Keccak256};
 
 use crate::utils::{write_value, write_vector};
 
@@ -82,7 +83,12 @@ pub fn hint_generate_test_vector(
         .collect();
     write_vector("keccak_result_array", &keccak_result_array, vm, hint_data)?;
 
-    write_value("len", MaybeRelocatable::Int(Felt252::from(keccak_result_array.len() / 2)), vm, hint_data)?;
+    write_value(
+        "len",
+        MaybeRelocatable::Int(Felt252::from(keccak_result_array.len() / 2)),
+        vm,
+        hint_data,
+    )?;
 
     Ok(())
 }

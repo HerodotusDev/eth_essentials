@@ -1,11 +1,13 @@
+use std::{cmp::Ordering, collections::HashMap};
+
+use cairo_vm::{
+    hint_processor::builtin_hint_processor::{builtin_hint_processor_definition::HintProcessorData, hint_utils::insert_value_into_ap},
+    types::exec_scope::ExecutionScopes,
+    vm::{errors::hint_errors::HintError, vm_core::VirtualMachine},
+    Felt252,
+};
+
 use crate::utils;
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::insert_value_into_ap;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::vm::{errors::hint_errors::HintError, vm_core::VirtualMachine};
-use cairo_vm::Felt252;
-use std::cmp::Ordering;
-use std::collections::HashMap;
 
 const FELT_31: Felt252 = Felt252::from_hex_unchecked("0x1F");
 const FELT_32: Felt252 = Felt252::from_hex_unchecked("0x20");
