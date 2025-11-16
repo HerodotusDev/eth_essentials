@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 pub const HINT_EXPECTED_LEADING_ZEROES: &str = "from tools.py.utils import parse_int_to_bytes, count_leading_zero_nibbles_from_hex\nreversed_hex = parse_int_to_bytes(ids.x.low + (2 ** 128) * ids.x.high)[::-1].hex()\nexpected_leading_zeroes = count_leading_zero_nibbles_from_hex(reversed_hex[1:] if ids.cut_nibble == 1 else reversed_hex)";
 
-// TODO fix this impl
 pub fn hint_expected_leading_zeroes(
     vm: &mut VirtualMachine,
     exec_scope: &mut ExecutionScopes,
@@ -16,32 +15,37 @@ pub fn hint_expected_leading_zeroes(
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     let x_ptr = get_relocatable_from_var_name("x", vm, &hint_data.ids_data, &hint_data.ap_tracking)?;
-
-    let x = vm
+    let x_felts = vm
         .get_continuous_range(x_ptr, 2)?
         .into_iter()
         .map(|v| v.get_int().unwrap())
         .collect::<Vec<Felt252>>();
 
-    let x_low: u128 = x[0].try_into().unwrap();
-    let x_high: u128 = x[1].try_into().unwrap();
+    let x_low: u128 = x_felts[0].try_into().unwrap();
+    let x_high: u128 = x_felts[1].try_into().unwrap();
 
-    let cut_nibble = utils::get_value("cut_nibble", vm, hint_data)?;
+    let mut le_bytes = [0u8; 32];
+    le_bytes[..16].copy_from_slice(&x_low.to_le_bytes());
+    le_bytes[16..].copy_from_slice(&x_high.to_le_bytes());
 
-    let reversed_hex = hex::encode([x_high.to_be_bytes(), x_low.to_be_bytes()].concat())
-        .bytes()
-        .rev()
-        .collect::<Vec<u8>>();
+    let mut hex_str = hex::encode(le_bytes).to_string();
+    if hex_str.is_empty() {
+        hex_str.push('0');
+    }
+    if hex_str.len() & 1 == 1 {
+        hex_str.insert(0, '0');
+    }
 
-    // Calculate expected leading zeroes, optionally skipping the first nibble
+    let cut_nibble: Felt252 = utils::get_value("cut_nibble", vm, hint_data)?;
     let hex_to_check = if cut_nibble == Felt252::ONE {
-        reversed_hex[1..].to_vec()
+        hex_str.chars().skip(1).collect::<String>()
     } else {
-        reversed_hex
+        hex_str
     };
-    let expected_leading_zeroes: Felt252 = hex_to_check.into_iter().take_while(|c| *c == b'0').count().into();
-    exec_scope.insert_value("expected_leading_zeroes", expected_leading_zeroes);
 
+    let leading_zeroes: Felt252 = hex_to_check.chars().take_while(|c| *c == '0').count().into();
+
+    exec_scope.insert_value("expected_leading_zeroes", leading_zeroes);
     Ok(())
 }
 
