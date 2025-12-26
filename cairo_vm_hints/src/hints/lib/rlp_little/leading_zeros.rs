@@ -26,20 +26,12 @@ pub fn hint_expected_leading_zeroes(
     let x_low: u128 = x[0].try_into().unwrap();
     let x_high: u128 = x[1].try_into().unwrap();
 
-    let cut_nibble = utils::get_value("cut_nibble", vm, hint_data)?;
-
     let reversed_hex = hex::encode([x_high.to_be_bytes(), x_low.to_be_bytes()].concat())
         .bytes()
         .rev()
         .collect::<Vec<u8>>();
 
-    // Calculate expected leading zeroes, optionally skipping the first nibble
-    let hex_to_check = if cut_nibble == Felt252::ONE {
-        reversed_hex[1..].to_vec()
-    } else {
-        reversed_hex
-    };
-    let expected_leading_zeroes: Felt252 = hex_to_check.into_iter().take_while(|c| *c == b'0').count().into();
+    let expected_leading_zeroes: Felt252 = reversed_hex.into_iter().take_while(|c| *c == b'0').count().into();
     exec_scope.insert_value("expected_leading_zeroes", expected_leading_zeroes);
 
     Ok(())
